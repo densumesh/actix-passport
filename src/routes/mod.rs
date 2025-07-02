@@ -30,15 +30,11 @@ where
 {
     cfg.service(
         web::scope("/auth")
-            .service(
-                web::resource("/register").route(web::post().to(auth::register_user::<U>)),
-            )
+            .service(web::resource("/register").route(web::post().to(auth::register_user::<U>)))
             .service(web::resource("/login").route(web::post().to(auth::login_user::<U>)))
             .service(web::resource("/logout").route(web::post().to(auth::logout_user)))
             .service(web::resource("/me").route(web::get().to(auth::get_me)))
-            .service(
-                web::resource("/{provider}").route(web::get().to(oauth::oauth_initiate::<U>)),
-            )
+            .service(web::resource("/{provider}").route(web::get().to(oauth::oauth_initiate::<U>)))
             .service(
                 web::resource("/{provider}/callback")
                     .route(web::get().to(oauth::oauth_callback::<U>)),

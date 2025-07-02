@@ -46,4 +46,3 @@ pub struct RegisterCredentials {
     /// User's display name (optional)
     pub display_name: Option<String>,
 }
-

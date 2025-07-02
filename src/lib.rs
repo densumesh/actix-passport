@@ -98,14 +98,14 @@ pub use crate::middleware::*;
 pub use crate::types::*;
 
 #[cfg(feature = "password")]
-pub use crate::password::{LoginCredentials, RegisterCredentials, service::PasswordAuthService};
+pub use crate::password::{service::PasswordAuthService, LoginCredentials, RegisterCredentials};
 
 #[cfg(feature = "oauth")]
 pub use crate::oauth::{
-    OAuthProvider, OAuthUser, OAuthConfig, service::OAuthService,
     providers::{
+        generic_provider::GenericOAuthProvider, github_provider::GitHubOAuthProvider,
         google_provider::GoogleOAuthProvider,
-        github_provider::GitHubOAuthProvider,
-        generic_provider::GenericOAuthProvider,
-    }
+    },
+    service::OAuthService,
+    OAuthConfig, OAuthProvider, OAuthUser,
 };

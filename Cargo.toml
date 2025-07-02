@@ -35,6 +35,7 @@ dyn-clone = "1.0.19"
 tokio-test = "0.4"
 actix-web-httpauth = "0.8"
 serde_urlencoded = "0.7"
+actix-http = "3.11"
 
 [features]
 default = ["password", "oauth", "jwt"]
