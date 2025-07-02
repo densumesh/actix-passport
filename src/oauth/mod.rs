@@ -4,7 +4,9 @@
 //! like Google, GitHub, etc. It includes provider implementations and
 //! utilities for handling OAuth flows.
 
+/// OAuth provider implementations for various services.
 pub mod providers;
+/// OAuth service for managing multiple providers.
 pub mod service;
 
 use crate::types::AuthResult;
@@ -78,6 +80,7 @@ pub struct OAuthUser {
 /// use actix_passport::{OAuthProvider, OAuthUser, AuthResult};
 /// use async_trait::async_trait;
 ///
+/// #[derive(Clone)]
 /// struct GoogleProvider {
 ///     client_id: String,
 ///     client_secret: String,
@@ -89,7 +92,25 @@ pub struct OAuthUser {
 ///         "google"
 ///     }
 ///     
-///     // ... other methods
+///     fn authorize_url(&self, state: &str, redirect_uri: &str) -> AuthResult<String> {
+///         Ok(format!(
+///             "https://accounts.google.com/oauth/authorize?client_id={}&redirect_uri={}&state={}",
+///             self.client_id, redirect_uri, state
+///         ))
+///     }
+///     
+///     async fn exchange_code(&self, _code: &str, _redirect_uri: &str) -> AuthResult<OAuthUser> {
+///         // Implementation here
+///         Ok(OAuthUser {
+///             provider: "google".to_string(),
+///             provider_id: "123".to_string(),
+///             email: Some("user@gmail.com".to_string()),
+///             username: None,
+///             display_name: Some("User".to_string()),
+///             avatar_url: None,
+///             raw_data: serde_json::json!({}),
+///         })
+///     }
 /// }
 /// ```
 #[async_trait]

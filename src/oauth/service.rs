@@ -15,14 +15,13 @@ use crate::{
 ///
 /// ```rust
 /// use actix_passport::{OAuthService, GoogleOAuthProvider, GitHubOAuthProvider};
-/// use std::sync::Arc;
 ///
 /// let mut oauth_service = OAuthService::new();
-/// oauth_service.add_provider(Arc::new(GoogleOAuthProvider::new(
+/// oauth_service.add_provider(Box::new(GoogleOAuthProvider::new(
 ///     "google_client_id".to_string(),
 ///     "google_client_secret".to_string(),
 /// )));
-/// oauth_service.add_provider(Arc::new(GitHubOAuthProvider::new(
+/// oauth_service.add_provider(Box::new(GitHubOAuthProvider::new(
 ///     "github_client_id".to_string(),
 ///     "github_client_secret".to_string(),
 /// )));

@@ -3,11 +3,9 @@
 //! This module provides functionality for username/password authentication,
 //! including password hashing, verification, and user registration.
 
-pub mod hasher;
+/// Password authentication service implementation.
 pub mod service;
 
-use crate::types::AuthResult;
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 /// Credentials for password-based login.
@@ -49,55 +47,3 @@ pub struct RegisterCredentials {
     pub display_name: Option<String>,
 }
 
-/// Trait for password hashing and verification.
-///
-/// This trait allows for pluggable password hashing implementations.
-/// The default implementation uses Argon2, but users can provide
-/// their own implementations for different hashing algorithms.
-///
-/// # Examples
-///
-/// ```rust
-/// use actix_passport::{PasswordHasher, AuthResult};
-/// use async_trait::async_trait;
-///
-/// struct MyPasswordHasher;
-///
-/// #[async_trait]
-/// impl PasswordHasher for MyPasswordHasher {
-///     async fn hash_password(&self, password: &str) -> AuthResult<String> {
-///         // Custom hashing implementation
-///         Ok("hashed_password".to_string())
-///     }
-///     
-///     async fn verify_password(&self, password: &str, hash: &str) -> AuthResult<bool> {
-///         // Custom verification implementation
-///         Ok(password == "correct_password")
-///     }
-/// }
-/// ```
-#[async_trait]
-pub trait PasswordHasher: Send + Sync {
-    /// Hashes a plain text password.
-    ///
-    /// # Arguments
-    ///
-    /// * `password` - The plain text password to hash
-    ///
-    /// # Returns
-    ///
-    /// Returns the hashed password as a string.
-    async fn hash_password(&self, password: &str) -> AuthResult<String>;
-
-    /// Verifies a password against its hash.
-    ///
-    /// # Arguments
-    ///
-    /// * `password` - The plain text password to verify
-    /// * `hash` - The stored password hash
-    ///
-    /// # Returns
-    ///
-    /// Returns `true` if the password matches the hash, `false` otherwise.
-    async fn verify_password(&self, password: &str, hash: &str) -> AuthResult<bool>;
-}

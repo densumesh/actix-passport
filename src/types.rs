@@ -1,7 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use uuid::Uuid;
 
 use crate::errors::AuthError;
 
@@ -111,25 +110,6 @@ impl AuthUser {
         self.display_name = Some(display_name.into());
         self
     }
-}
-
-/// Represents a user session.
-///
-/// Sessions are used to maintain user authentication state across requests.
-/// Each session has a unique ID, is associated with a user, and contains
-/// expiration information and custom data.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Session {
-    /// Unique session identifier
-    pub id: Uuid,
-    /// ID of the user this session belongs to
-    pub user_id: String,
-    /// Timestamp when the session was created
-    pub created_at: DateTime<Utc>,
-    /// Timestamp when the session expires
-    pub expires_at: DateTime<Utc>,
-    /// Additional session data
-    pub data: HashMap<String, serde_json::Value>,
 }
 
 /// Type alias for authentication results.

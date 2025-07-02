@@ -1,35 +1,37 @@
 //! Handlers for OAuth 2.0 routes.
 
 use crate::builder::ActixPassport;
-use crate::middleware::utils;
+use crate::core::UserStore;
 use crate::types::AuthUser;
-use crate::{
-    core::{SessionStore, UserStore},
-    password::PasswordHasher,
-};
 use actix_session::Session;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use serde::Deserialize;
 
+const USER_ID_KEY: &str = "actix_passport_user_id";
+
+/// Parameters received from OAuth provider callback.
+///
+/// This struct represents the query parameters that OAuth providers
+/// send back to the callback URL after user authorization.
 #[derive(Deserialize)]
 pub struct OAuthCallbackParams {
+    /// Authorization code from the OAuth provider
     code: String,
+    /// State parameter for CSRF protection
     state: String,
 }
 
 /// Initiates the OAuth flow for a given provider.
 ///
 /// **GET /auth/{provider}**
-pub async fn oauth_initiate<U, S, H>(
+pub async fn oauth_initiate<U>(
     req: HttpRequest,
     provider: web::Path<String>,
-    framework: web::Data<ActixPassport<U, S, H>>,
+    framework: web::Data<ActixPassport<U>>,
     session: Session,
 ) -> impl Responder
 where
     U: UserStore,
-    S: SessionStore,
-    H: PasswordHasher,
 {
     let provider_name = provider.into_inner();
     if let Some(ref oauth_service) = framework.oauth_service {
@@ -65,17 +67,15 @@ where
 /// Handles the callback from the OAuth provider.
 ///
 /// **GET /auth/{provider}/callback**
-pub async fn oauth_callback<U, S, H>(
+pub async fn oauth_callback<U>(
     provider: web::Path<String>,
     params: web::Query<OAuthCallbackParams>,
-    framework: web::Data<ActixPassport<U, S, H>>,
+    framework: web::Data<ActixPassport<U>>,
     session: Session,
     req: HttpRequest,
 ) -> impl Responder
 where
     U: UserStore,
-    S: SessionStore,
-    H: PasswordHasher,
 {
     let provider_name = provider.into_inner();
 
@@ -124,18 +124,9 @@ where
             Err(e) => return HttpResponse::InternalServerError().json(e.to_string()),
         };
 
-        // Create a session for the user
-        let user_session = utils::create_user_session(&user, framework.config.session_duration);
-        if let Err(e) = framework
-            .session_store
-            .create_session(user_session.clone())
-            .await
-        {
-            return HttpResponse::InternalServerError().json(e.to_string());
-        }
-
-        if let Err(e) = utils::set_session_id(&session, user_session.id) {
-            return HttpResponse::InternalServerError().json(e.to_string());
+        // Store user ID in session
+        if session.insert(USER_ID_KEY, &user.id).is_err() {
+            return HttpResponse::InternalServerError().finish();
         }
 
         HttpResponse::Ok().json(user)

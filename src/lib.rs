@@ -1,8 +1,89 @@
+//! # Actix Passport
+//!
+//! A comprehensive, flexible authentication framework for [actix-web](https://actix.rs/) applications in Rust.
+//!
+//! ## Features
+//!
+//! - **Multiple Authentication Methods**: Username/password (with Argon2 hashing), OAuth 2.0, JWT tokens, and session-based authentication
+//! - **Pluggable Architecture**: Database-agnostic user stores, extensible OAuth providers
+//! - **Security First**: Built-in CSRF protection, secure session management, configurable CORS policies
+//! - **Developer Friendly**: Minimal boilerplate, type-safe extractors, comprehensive documentation
+//!
+//! ## Quick Start
+//!
+//! ```rust,no_run
+//! use actix_passport::{ActixPassportBuilder, core::UserStore, types::{AuthResult, AuthUser}};
+//! use actix_web::{web, App, HttpServer};
+//! use actix_session::SessionMiddleware;
+//! use async_trait::async_trait;
+//!
+//! // Implement your user store
+//! #[derive(Clone)]
+//! struct MyUserStore;
+//!
+//! #[async_trait]
+//! impl UserStore for MyUserStore {
+//!     async fn find_by_id(&self, id: &str) -> AuthResult<Option<AuthUser>> {
+//!         // Your implementation
+//!         Ok(None)
+//!     }
+//!     // ... implement other required methods
+//! #   async fn find_by_email(&self, email: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+//! #   async fn find_by_username(&self, username: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+//! #   async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+//! #   async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+//! #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
+//! }
+//!
+//! #[actix_web::main]
+//! async fn main() -> std::io::Result<()> {
+//!     // Configure authentication framework
+//!     let auth_framework = ActixPassportBuilder::new()
+//!         .with_user_store(MyUserStore)
+//!         .enable_password_auth()  // Uses Argon2 hashing internally
+//!         .build()
+//!         .expect("Failed to build auth framework");
+//!
+//!     HttpServer::new(move || {
+//!         App::new()
+//!             .app_data(web::Data::new(auth_framework.clone()))
+//!             .configure(actix_passport::routes::configure_routes::<MyUserStore>)
+//!     })
+//!     .bind("127.0.0.1:8080")?
+//!     .run()
+//!     .await
+//! }
+//! ```
+//!
+//! ## Available Routes
+//!
+//! Once configured, your app automatically gets these authentication endpoints:
+//!
+//! - `POST /auth/register` - Register new user with email/password
+//! - `POST /auth/login` - Login with email/username and password
+//! - `POST /auth/logout` - Logout current user
+//! - `GET /auth/me` - Get current user profile
+//! - `GET /auth/{provider}` - Initiate OAuth login
+//! - `GET /auth/{provider}/callback` - Handle OAuth callback
+//!
+//! ## Architecture
+//!
+//! The framework is built around these core components:
+//!
+//! - [`ActixPassport`] - Main framework object containing all services
+//! - [`core::UserStore`] - Trait for user persistence (implement for your database)
+//! - [`password::PasswordAuthService`] - Service for password-based authentication using Argon2
+//! - [`oauth::OAuthProvider`] - Trait for OAuth 2.0 providers
+//! - Authentication middleware for session and JWT-based auth
+
 pub mod builder;
+/// Core authentication types and traits.
 pub mod core;
+/// Authentication error types.
 pub mod errors;
 pub mod middleware;
 pub mod routes;
+/// Core type definitions for authentication.
 pub mod types;
 
 #[cfg(feature = "password")]
@@ -14,3 +95,17 @@ pub mod oauth;
 pub use crate::builder::{ActixPassport, ActixPassportBuilder};
 pub use crate::core::*;
 pub use crate::middleware::*;
+pub use crate::types::*;
+
+#[cfg(feature = "password")]
+pub use crate::password::{LoginCredentials, RegisterCredentials, service::PasswordAuthService};
+
+#[cfg(feature = "oauth")]
+pub use crate::oauth::{
+    OAuthProvider, OAuthUser, OAuthConfig, service::OAuthService,
+    providers::{
+        google_provider::GoogleOAuthProvider,
+        github_provider::GitHubOAuthProvider,
+        generic_provider::GenericOAuthProvider,
+    }
+};

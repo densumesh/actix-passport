@@ -1,52 +1,87 @@
 use crate::{
     core::UserStore,
     errors::AuthError,
-    password::{LoginCredentials, PasswordHasher, RegisterCredentials},
+    password::{LoginCredentials, RegisterCredentials},
     types::{AuthResult, AuthUser},
 };
 
+use argon2::{
+    password_hash::{
+        rand_core::OsRng, PasswordHash, PasswordHasher as _, PasswordVerifier, SaltString,
+    },
+    Argon2,
+};
 use serde_json;
 
 /// Service for password-based authentication operations.
 ///
 /// This service handles login, registration, and password management
-/// operations. It coordinates between the user store and password hasher.
+/// operations using Argon2 for password hashing.
 ///
 /// # Examples
 ///
 /// ```rust
-/// use actix_passport::{PasswordAuthService, Argon2PasswordHasher};
+/// use actix_passport::{PasswordAuthService, UserStore, AuthUser, AuthResult};
+/// use async_trait::async_trait;
 ///
-/// let auth_service = PasswordAuthService::new(
-///     my_user_store,
-///     Argon2PasswordHasher::default(),
-/// );
+/// #[derive(Clone)]
+/// struct MyUserStore;
+///
+/// #[async_trait]
+/// impl UserStore for MyUserStore {
+///     async fn find_by_id(&self, _id: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+///     async fn find_by_email(&self, _email: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+///     async fn find_by_username(&self, _username: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+///     async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+///     async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+///     async fn delete_user(&self, _id: &str) -> AuthResult<()> { Ok(()) }
+/// }
+///
+/// let auth_service = PasswordAuthService::new(MyUserStore);
 /// ```
 #[derive(Clone)]
-pub struct PasswordAuthService<U, H>
+pub struct PasswordAuthService<U>
 where
     U: UserStore,
-    H: PasswordHasher,
 {
     user_store: U,
-    password_hasher: H,
 }
 
-impl<U, H> PasswordAuthService<U, H>
+impl<U> PasswordAuthService<U>
 where
     U: UserStore,
-    H: PasswordHasher,
 {
     /// Creates a new password authentication service.
     ///
     /// # Arguments
     ///
     /// * `user_store` - The user store implementation
-    /// * `password_hasher` - The password hasher implementation
-    pub const fn new(user_store: U, password_hasher: H) -> Self {
-        Self {
-            user_store,
-            password_hasher,
+    pub const fn new(user_store: U) -> Self {
+        Self { user_store }
+    }
+
+    /// Hashes a password using Argon2.
+    fn hash_password(password: &str) -> AuthResult<String> {
+        let salt = SaltString::generate(&mut OsRng);
+        let argon2 = Argon2::default();
+
+        let password_hash = argon2
+            .hash_password(password.as_bytes(), &salt)
+            .map_err(|e| AuthError::Internal(format!("Password hashing failed: {e}")))?;
+
+        Ok(password_hash.to_string())
+    }
+
+    /// Verifies a password against its hash using Argon2.
+    fn verify_password(password: &str, hash: &str) -> AuthResult<bool> {
+        let parsed_hash = PasswordHash::new(hash)
+            .map_err(|e| AuthError::Internal(format!("Invalid password hash: {e}")))?;
+
+        let argon2 = Argon2::default();
+
+        match argon2.verify_password(password.as_bytes(), &parsed_hash) {
+            Ok(()) => Ok(true),
+            Err(_) => Ok(false),
         }
     }
 
@@ -85,10 +120,7 @@ where
             .and_then(|v| v.as_str())
             .ok_or(AuthError::InvalidCredentials)?;
 
-        let is_valid = self
-            .password_hasher
-            .verify_password(&credentials.password, stored_hash)
-            .await?;
+        let is_valid = Self::verify_password(&credentials.password, stored_hash)?;
 
         if !is_valid {
             return Err(AuthError::InvalidCredentials);
@@ -125,10 +157,7 @@ where
         }
 
         // Hash the password
-        let password_hash = self
-            .password_hasher
-            .hash_password(&credentials.password)
-            .await?;
+        let password_hash = Self::hash_password(&credentials.password)?;
 
         // Create user with hashed password in metadata
         let mut user =
@@ -189,17 +218,14 @@ where
             .and_then(|v| v.as_str())
             .ok_or(AuthError::InvalidCredentials)?;
 
-        let is_valid = self
-            .password_hasher
-            .verify_password(old_password, stored_hash)
-            .await?;
+        let is_valid = Self::verify_password(old_password, stored_hash)?;
 
         if !is_valid {
             return Err(AuthError::InvalidCredentials);
         }
 
         // Hash new password
-        let new_hash = self.password_hasher.hash_password(new_password).await?;
+        let new_hash = Self::hash_password(new_password)?;
 
         // Update password hash
         user.metadata.insert(

@@ -1,13 +1,12 @@
 //! Core authentication types and traits for actix-passport.
 //!
 //! This module provides the fundamental building blocks for the authentication system,
-//! including user representation, session management, and error handling.
+//! including user representation, and error handling.
 
 use async_trait::async_trait;
 use dyn_clone::DynClone;
-use uuid::Uuid;
 
-use crate::types::{AuthResult, AuthUser, Session};
+use crate::types::{AuthResult, AuthUser};
 
 /// Trait for storing and retrieving user data.
 ///
@@ -20,6 +19,7 @@ use crate::types::{AuthResult, AuthUser, Session};
 /// use actix_passport::{UserStore, AuthUser, AuthResult};
 /// use async_trait::async_trait;
 ///
+/// #[derive(Clone)]
 /// struct MyUserStore;
 ///
 /// #[async_trait]
@@ -29,7 +29,25 @@ use crate::types::{AuthResult, AuthUser, Session};
 ///         Ok(None)
 ///     }
 ///     
-///     // ... other methods
+///     async fn find_by_email(&self, email: &str) -> AuthResult<Option<AuthUser>> {
+///         Ok(None)
+///     }
+///     
+///     async fn find_by_username(&self, username: &str) -> AuthResult<Option<AuthUser>> {
+///         Ok(None)
+///     }
+///     
+///     async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> {
+///         Ok(user)
+///     }
+///     
+///     async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> {
+///         Ok(user)
+///     }
+///     
+///     async fn delete_user(&self, _id: &str) -> AuthResult<()> {
+///         Ok(())
+///     }
 /// }
 /// ```
 #[async_trait]
@@ -81,50 +99,6 @@ pub trait UserStore: Send + Sync + DynClone {
 }
 
 dyn_clone::clone_trait_object!(UserStore);
-
-/// Trait for storing and managing user sessions.
-///
-/// This trait defines the interface for session persistence and management.
-/// Implementors can use any storage backend (Redis, database, memory, etc.).
-#[async_trait]
-pub trait SessionStore: Send + Sync {
-    /// Creates a new session.
-    ///
-    /// # Arguments
-    ///
-    /// * `session` - The session to create
-    async fn create_session(&self, session: Session) -> AuthResult<Session>;
-    /// Finds a session by its ID.
-    ///
-    /// # Arguments
-    ///
-    /// * `id` - The session ID
-    async fn find_session(&self, id: Uuid) -> AuthResult<Option<Session>>;
-    /// Updates an existing session.
-    ///
-    /// # Arguments
-    ///
-    /// * `session` - The session with updated information
-    async fn update_session(&self, session: Session) -> AuthResult<Session>;
-    /// Deletes a session.
-    ///
-    /// # Arguments
-    ///
-    /// * `id` - The session ID to delete
-    async fn delete_session(&self, id: Uuid) -> AuthResult<()>;
-    /// Deletes all sessions for a specific user.
-    ///
-    /// # Arguments
-    ///
-    /// * `user_id` - The user ID whose sessions to delete
-    async fn delete_user_sessions(&self, user_id: &str) -> AuthResult<()>;
-    /// Cleans up expired sessions.
-    ///
-    /// # Returns
-    ///
-    /// Returns the number of expired sessions that were cleaned up.
-    async fn cleanup_expired_sessions(&self) -> AuthResult<u64>;
-}
 
 /// Configuration for the authentication system.
 ///

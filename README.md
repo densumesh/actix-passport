@@ -44,14 +44,28 @@ tokio = { version = "1.0", features = ["full"] }
 
 ```rust
 use actix_passport::{
-    AuthBuilder, AuthenticatedUser, OptionalAuthenticatedUser,
-    InMemoryUserStore, InMemorySessionStore
+    ActixPassportBuilder, AuthedUser, OptionalAuthedUser,
+    core::UserStore, types::{AuthResult, AuthUser}, routes
 };
-use actix_session::{config::PersistentSession, storage::CookieSessionStore, SessionMiddleware};
+use actix_session::{SessionMiddleware, storage::CookieSessionStore};
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use async_trait::async_trait;
+
+// Implement your user store (use a real database in production)
+#[derive(Clone, Default)]
+struct InMemoryUserStore;
+
+#[async_trait]
+impl UserStore for InMemoryUserStore {
+    async fn find_by_id(&self, _id: &str) -> AuthResult<Option<AuthUser>> {
+        // Your database implementation here
+        Ok(None)
+    }
+    // ... implement other required methods
+}
 
 #[get("/")]
-async fn home(user: OptionalAuthenticatedUser) -> impl Responder {
+async fn home(user: OptionalAuthedUser) -> impl Responder {
     match user.0 {
         Some(user) => HttpResponse::Ok().json(format!("Welcome, {}!", user.id)),
         None => HttpResponse::Ok().json("Welcome! Please log in."),
@@ -59,42 +73,29 @@ async fn home(user: OptionalAuthenticatedUser) -> impl Responder {
 }
 
 #[get("/dashboard")]
-async fn dashboard(user: AuthenticatedUser) -> impl Responder {
+async fn dashboard(user: AuthedUser) -> impl Responder {
     HttpResponse::Ok().json(format!("Dashboard for user: {}", user.0.id))
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // Set up stores (use database implementations in production)
-    let user_store = InMemoryUserStore::new();
-    let session_store = InMemorySessionStore::new();
-    
-    // Configure authentication
-    let auth = AuthBuilder::new()
-        .user_store(user_store)
-        .session_store(session_store)
-        .enable_password_auth()
-        .with_google_oauth(
-            "your_google_client_id".to_string(),
-            "your_google_client_secret".to_string(),
-        )
-        .build();
+    // Configure authentication framework
+    let auth_framework = ActixPassportBuilder::new()
+        .with_user_store(InMemoryUserStore::default())
+        .enable_password_auth()  // Uses Argon2 hashing internally
+        .build()
+        .expect("Failed to build auth framework");
 
     HttpServer::new(move || {
-        let session_middleware = SessionMiddleware::new(
-            CookieSessionStore::default(),
-            actix_web::cookie::Key::generate(),
-        );
-
         App::new()
-            .wrap(session_middleware)
-            .wrap(auth.middleware())
+            .wrap(SessionMiddleware::new(
+                CookieSessionStore::default(),
+                actix_web::cookie::Key::generate(),
+            ))
+            .app_data(web::Data::new(auth_framework.clone()))
             .service(home)
             .service(dashboard)
-            .service(
-                web::scope("/auth")
-                    .configure(|cfg| auth.configure_routes(cfg))
-            )
+            .configure(routes::configure_routes::<InMemoryUserStore>)
     })
     .bind("127.0.0.1:8080")?
     .run()
@@ -118,7 +119,7 @@ Once configured, your app automatically gets these authentication endpoints:
 Implement the `UserStore` trait for your database:
 
 ```rust
-use actix_passport::{UserStore, AuthUser, AuthResult};
+use actix_passport::{core::UserStore, types::{AuthUser, AuthResult}};
 use async_trait::async_trait;
 
 pub struct DatabaseUserStore {
@@ -137,19 +138,32 @@ impl UserStore for DatabaseUserStore {
         todo!()
     }
 
+    async fn find_by_username(&self, username: &str) -> AuthResult<Option<AuthUser>> {
+        // Your database query logic
+        todo!()
+    }
+
     async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> {
         // Your user creation logic
         todo!()
     }
 
-    // ... implement other required methods
+    async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> {
+        // Your user update logic
+        todo!()
+    }
+
+    async fn delete_user(&self, id: &str) -> AuthResult<()> {
+        // Your user deletion logic
+        todo!()
+    }
 }
 ```
 
 ### Custom OAuth Provider
 
 ```rust
-use actix_passport::{OAuthProvider, OAuthUser, AuthResult};
+use actix_passport::{oauth::{OAuthProvider, OAuthUser}, types::AuthResult};
 use async_trait::async_trait;
 
 pub struct CustomOAuthProvider {
@@ -204,24 +218,24 @@ Available features:
 ### Core Components
 
 - **`UserStore`** - Interface for user persistence (database, file, etc.)
-- **`SessionStore`** - Interface for session management (Redis, database, memory)
-- **`PasswordHasher`** - Interface for password hashing (Argon2, bcrypt, etc.)
+- **`PasswordAuthService`** - Service for password authentication using Argon2 hashing
 - **`OAuthProvider`** - Interface for OAuth providers (Google, GitHub, custom)
+- **`ActixPassport`** - Main framework object containing all configured services
 
 ### Middleware
 
-- **`AuthMiddleware`** - Session-based authentication middleware
+- **`SessionAuthMiddleware`** - Session-based authentication middleware
 - **`JwtAuthMiddleware`** - JWT token authentication middleware
 
 ### Extractors
 
-- **`AuthenticatedUser`** - Requires authentication, returns user or 401
-- **`OptionalAuthenticatedUser`** - Optional authentication, returns `Option<User>`
+- **`AuthedUser`** - Requires authentication, returns user or 401
+- **`OptionalAuthedUser`** - Optional authentication, returns `Option<User>`
 
 ## Configuration
 
 ```rust
-use actix_passport::{AuthConfig, RouteConfig};
+use actix_passport::{ActixPassportBuilder, core::AuthConfig};
 use chrono::Duration;
 
 let auth_config = AuthConfig {
@@ -232,17 +246,12 @@ let auth_config = AuthConfig {
     password_reset_expiry: Duration::hours(1),
 };
 
-let route_config = RouteConfig {
-    login_success_redirect: Some("/dashboard".to_string()),
-    logout_redirect: Some("/".to_string()),
-    oauth_callback_base: "https://yourapp.com/auth".to_string(),
-};
-
-let auth = AuthBuilder::new()
+let auth_framework = ActixPassportBuilder::new()
+    .with_user_store(your_user_store)
+    .enable_password_auth()  // Uses Argon2 hashing
     .with_config(auth_config)
-    .with_route_config(route_config)
-    // ... other configuration
-    .build();
+    .build()
+    .expect("Failed to build auth framework");
 ```
 
 ## Testing

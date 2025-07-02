@@ -3,8 +3,8 @@
 //! This module provides middleware for handling authentication in actix-web applications.
 //! It includes session-based authentication, JWT token validation, and user identity injection.
 
+/// Authentication middleware schemes for different authentication methods.
 pub mod schemes;
-pub mod utils;
 
 use crate::types::AuthUser;
 use actix_web::{error::ErrorUnauthorized, FromRequest, HttpMessage, HttpRequest};
@@ -23,10 +23,10 @@ pub use schemes::session_auth::SessionAuthMiddleware;
 ///
 /// ```rust
 /// use actix_web::{get, HttpResponse};
-/// use actix_passport::AuthenticatedUser;
+/// use actix_passport::AuthedUser;
 ///
 /// #[get("/profile")]
-/// async fn get_profile(user: AuthenticatedUser) -> HttpResponse {
+/// async fn get_profile(user: AuthedUser) -> HttpResponse {
 ///     HttpResponse::Ok().json(&user.0)
 /// }
 /// ```
@@ -55,10 +55,10 @@ impl FromRequest for AuthedUser {
 ///
 /// ```rust
 /// use actix_web::{get, HttpResponse};
-/// use actix_passport::OptionalAuthenticatedUser;
+/// use actix_passport::OptionalAuthedUser;
 ///
 /// #[get("/home")]
-/// async fn home(user: OptionalAuthenticatedUser) -> HttpResponse {
+/// async fn home(user: OptionalAuthedUser) -> HttpResponse {
 ///     match user.0 {
 ///         Some(user) => HttpResponse::Ok().json(format!("Welcome, {}!", user.id)),
 ///         None => HttpResponse::Ok().json("Welcome, guest!"),

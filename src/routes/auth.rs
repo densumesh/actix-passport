@@ -1,26 +1,23 @@
 //! Handlers for standard authentication routes.
 
 use crate::builder::ActixPassport;
-use crate::middleware::{utils, AuthedUser};
+use crate::core::UserStore;
+use crate::middleware::AuthedUser;
 use crate::password::{LoginCredentials, RegisterCredentials};
-use crate::{
-    core::{SessionStore, UserStore},
-    password::PasswordHasher,
-};
 use actix_session::Session;
 use actix_web::{web, HttpResponse, Responder};
+
+const USER_ID_KEY: &str = "actix_passport_user_id";
 
 /// Handles user registration.
 ///
 /// **POST /auth/register**
-pub async fn register_user<U, S, H>(
+pub async fn register_user<U>(
     credentials: web::Json<RegisterCredentials>,
-    framework: web::Data<ActixPassport<U, S, H>>,
+    framework: web::Data<ActixPassport<U>>,
 ) -> impl Responder
 where
     U: UserStore,
-    S: SessionStore,
-    H: PasswordHasher,
 {
     if let Some(ref password_service) = framework.password_service {
         match password_service.register(credentials.into_inner()).await {
@@ -35,33 +32,20 @@ where
 /// Handles user login.
 ///
 /// **POST /auth/login**
-pub async fn login_user<U, S, H>(
+pub async fn login_user<U>(
     credentials: web::Json<LoginCredentials>,
-    framework: web::Data<ActixPassport<U, S, H>>,
+    framework: web::Data<ActixPassport<U>>,
     session: Session,
 ) -> impl Responder
 where
     U: UserStore,
-    S: SessionStore,
-    H: PasswordHasher,
 {
     if let Some(ref password_service) = framework.password_service {
         match password_service.login(credentials.into_inner()).await {
             Ok(user) => {
-                let user_session =
-                    utils::create_user_session(&user, framework.config.session_duration);
-                if let Err(e) = framework
-                    .session_store
-                    .create_session(user_session.clone())
-                    .await
-                {
-                    return HttpResponse::InternalServerError().json(e.to_string());
+                if session.insert(USER_ID_KEY, &user.id).is_err() {
+                    return HttpResponse::InternalServerError().finish();
                 }
-
-                if let Err(e) = utils::set_session_id(&session, user_session.id) {
-                    return HttpResponse::InternalServerError().json(e.to_string());
-                }
-
                 HttpResponse::Ok().json(user)
             }
             Err(e) => HttpResponse::Unauthorized().json(e.to_string()),
@@ -74,22 +58,9 @@ where
 /// Handles user logout.
 ///
 /// **POST /auth/logout**
-pub async fn logout_user<U, S, H>(
-    session: Session,
-    framework: web::Data<ActixPassport<U, S, H>>,
-) -> impl Responder
-where
-    U: UserStore,
-    S: SessionStore,
-    H: PasswordHasher,
-{
-    if let Ok(Some(session_id_str)) = session.get::<String>("session_id") {
-        if let Ok(session_id) = uuid::Uuid::parse_str(&session_id_str) {
-            let _ = framework.session_store.delete_session(session_id).await;
-        }
-    }
-
-    utils::clear_session(&session);
+pub async fn logout_user(session: Session) -> impl Responder {
+    session.remove(USER_ID_KEY);
+    session.purge();
     HttpResponse::Ok().finish()
 }
 

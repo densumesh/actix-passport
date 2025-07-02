@@ -1,67 +1,124 @@
 //! Builder for constructing the main authentication framework.
 
 use crate::{
-    core::{AuthConfig, SessionStore, UserStore},
+    core::{AuthConfig, UserStore},
     errors::AuthError,
     oauth::{service::OAuthService, OAuthProvider},
-    password::{service::PasswordAuthService, PasswordHasher},
+    password::service::PasswordAuthService,
 };
+use std::sync::Arc;
 
 /// The main authentication framework object.
 ///
 /// This struct is created by the `ActixPassportBuilder` and holds all the
 /// configured services and stores. It is intended to be cloned and stored
 /// in the actix-web application data.
+///
+/// # Type Parameters
+///
+/// * `U` - The user store implementation that handles user persistence
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use actix_passport::{ActixPassportBuilder, core::UserStore};
+/// # use actix_passport::types::{AuthResult, AuthUser};
+/// # use async_trait::async_trait;
+/// # #[derive(Clone)] struct MyUserStore;
+/// # #[async_trait]
+/// # impl UserStore for MyUserStore {
+/// #   async fn find_by_id(&self, id: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+/// #   async fn find_by_email(&self, email: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+/// #   async fn find_by_username(&self, username: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+/// #   async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+/// #   async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+/// #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
+/// # }
+///
+/// let auth_framework = ActixPassportBuilder::new()
+///     .with_user_store(MyUserStore)
+///     .enable_password_auth()
+///     .build()
+///     .expect("Failed to build framework");
+/// ```
 #[derive(Clone)]
-pub struct ActixPassport<U, S, H>
+pub struct ActixPassport<U>
 where
     U: UserStore + 'static,
-    S: SessionStore + 'static,
-    H: PasswordHasher + 'static,
 {
+    /// The user store implementation for persisting user data
     pub user_store: U,
-    pub session_store: S,
-    pub password_service: Option<PasswordAuthService<U, H>>,
+    /// Optional password authentication service (available when password auth is enabled)
+    pub password_service: Option<PasswordAuthService<U>>,
+    /// Optional OAuth service (available when OAuth providers are configured)
     pub oauth_service: Option<OAuthService>,
-    pub config: AuthConfig,
+    /// Authentication configuration settings
+    pub config: Arc<AuthConfig>,
 }
 
-/// Builder for `ActixPassport`.
-pub struct ActixPassportBuilder<U, S, H>
+/// Builder for configuring and creating an `ActixPassport`.
+///
+/// This builder allows you to configure various authentication methods
+/// and services before creating the final framework instance.
+///
+/// # Type Parameters
+///
+/// * `U` - The user store implementation that handles user persistence
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use actix_passport::{ActixPassportBuilder, core::UserStore};
+/// # use actix_passport::types::{AuthResult, AuthUser};
+/// # use async_trait::async_trait;
+/// # #[derive(Clone)] struct MyUserStore;
+/// # #[async_trait] impl UserStore for MyUserStore {
+/// #   async fn find_by_id(&self, id: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+/// #   async fn find_by_email(&self, email: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+/// #   async fn find_by_username(&self, username: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+/// #   async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+/// #   async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+/// #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
+/// # }
+/// # #[cfg(feature = "oauth")]
+/// # use actix_passport::GoogleOAuthProvider;
+///
+/// let builder = ActixPassportBuilder::new()
+///     .with_user_store(MyUserStore)
+///     .enable_password_auth();  // Enables Argon2-based password authentication
+///
+/// # #[cfg(feature = "oauth")]
+/// # let builder = builder.with_oauth(GoogleOAuthProvider::new("client_id".to_string(), "client_secret".to_string()));
+///
+/// let framework = builder.build().expect("Failed to build framework");
+/// ```
+pub struct ActixPassportBuilder<U>
 where
     U: UserStore + 'static,
-    S: SessionStore + 'static,
-    H: PasswordHasher + 'static,
 {
     user_store: Option<U>,
-    session_store: Option<S>,
-    password_hasher: Option<H>,
+    enable_password_auth: bool,
     oauth_providers: Vec<Box<dyn OAuthProvider>>,
     config: AuthConfig,
 }
 
-impl<U, S, H> Default for ActixPassportBuilder<U, S, H>
+impl<U> Default for ActixPassportBuilder<U>
 where
     U: UserStore + 'static,
-    S: SessionStore + 'static,
-    H: PasswordHasher + 'static,
 {
     fn default() -> Self {
         Self {
             user_store: None,
-            session_store: None,
-            password_hasher: None,
+            enable_password_auth: false,
             oauth_providers: Vec::new(),
             config: AuthConfig::default(),
         }
     }
 }
 
-impl<U, S, H> ActixPassportBuilder<U, S, H>
+impl<U> ActixPassportBuilder<U>
 where
     U: UserStore + Clone,
-    S: SessionStore,
-    H: PasswordHasher,
 {
     /// Creates a new builder.
     #[must_use]
@@ -76,17 +133,38 @@ where
         self
     }
 
-    /// Sets the session store.
+    /// Enables password authentication using Argon2 hashing.
+    ///
+    /// When enabled, this adds password-based authentication capabilities
+    /// to the framework. Users will be able to register and login using
+    /// email/username and password combinations. Passwords are securely
+    /// hashed using the Argon2 algorithm.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use actix_passport::ActixPassportBuilder;
+    /// # use actix_passport::{core::UserStore, types::{AuthResult, AuthUser}};
+    /// # use async_trait::async_trait;
+    /// # #[derive(Clone)] struct MyUserStore;
+    /// # #[async_trait] impl UserStore for MyUserStore {
+    /// #   async fn find_by_id(&self, id: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+    /// #   async fn find_by_email(&self, email: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+    /// #   async fn find_by_username(&self, username: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+    /// #   async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+    /// #   async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+    /// #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
+    /// # }
+    ///
+    /// let framework = ActixPassportBuilder::new()
+    ///     .with_user_store(MyUserStore)
+    ///     .enable_password_auth()  // Enables password auth with Argon2
+    ///     .build()
+    ///     .expect("Failed to build framework");
+    /// ```
     #[must_use]
-    pub fn with_session_store(mut self, store: S) -> Self {
-        self.session_store = Some(store);
-        self
-    }
-
-    /// Enables password authentication with the given hasher.
-    #[must_use]
-    pub fn enable_password_auth(mut self, hasher: H) -> Self {
-        self.password_hasher = Some(hasher);
+    pub const fn enable_password_auth(mut self) -> Self {
+        self.enable_password_auth = true;
         self
     }
 
@@ -108,22 +186,21 @@ where
     ///
     /// # Panics
     ///
-    /// Panics if `user_store` or `session_store` are not set.
+    /// Panics if `user_store` is not set.
     ///
     /// # Errors
     ///
-    /// Returns an error if `user_store` or `session_store` are not set.
-    pub fn build(self) -> Result<ActixPassport<U, S, H>, Box<dyn std::error::Error>> {
+    /// Returns an error if `user_store` is not set.
+    pub fn build(self) -> Result<ActixPassport<U>, Box<dyn std::error::Error>> {
         let user_store = self
             .user_store
             .ok_or_else(|| AuthError::Internal("A UserStore is required.".to_string()))?;
-        let session_store = self
-            .session_store
-            .ok_or_else(|| AuthError::Internal("A SessionStore is required.".to_string()))?;
 
-        let password_service = self
-            .password_hasher
-            .map(|hasher| PasswordAuthService::new(user_store.clone(), hasher));
+        let password_service = if self.enable_password_auth {
+            Some(PasswordAuthService::new(user_store.clone()))
+        } else {
+            None
+        };
 
         let oauth_service = if self.oauth_providers.is_empty() {
             None
@@ -137,10 +214,9 @@ where
 
         Ok(ActixPassport {
             user_store,
-            session_store,
             password_service,
             oauth_service,
-            config: self.config,
+            config: Arc::new(self.config),
         })
     }
 }
