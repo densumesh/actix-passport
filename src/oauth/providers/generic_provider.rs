@@ -16,17 +16,20 @@ use url::Url;
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```rust,no_run
 /// use actix_passport::{GenericOAuthProvider, OAuthConfig};
 ///
-/// let config = OAuthConfig {
-///     client_id: "your_client_id".to_string(),
-///     client_secret: "your_client_secret".to_string(),
-///     auth_url: "https://provider.com/oauth/authorize".to_string(),
-///     token_url: "https://provider.com/oauth/token".to_string(),
-///     user_info_url: "https://provider.com/api/user".to_string(),
-///     scopes: vec!["read:user".to_string(), "user:email".to_string()],
-/// };
+/// let config = OAuthConfig::builder(
+///     "your_client_id".to_string(),
+///     "your_client_secret".to_string(),
+/// )
+/// .auth_url("https://provider.com/oauth/authorize")
+/// .token_url("https://provider.com/oauth/token")
+/// .user_info_url("https://provider.com/api/user")
+/// .scope("read:user")
+/// .scope("user:email")
+/// .build()
+/// .unwrap();
 ///
 /// let provider = GenericOAuthProvider::new("custom", config);
 /// ```

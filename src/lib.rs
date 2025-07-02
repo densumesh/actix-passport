@@ -46,8 +46,7 @@
 //!
 //!     HttpServer::new(move || {
 //!         App::new()
-//!             .app_data(web::Data::new(auth_framework.clone()))
-//!             .configure(actix_passport::routes::configure_routes::<MyUserStore>)
+//!             .configure(|cfg| auth_framework.configure_routes(cfg))
 //!     })
 //!     .bind("127.0.0.1:8080")?
 //!     .run()

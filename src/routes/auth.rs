@@ -1,7 +1,6 @@
 //! Handlers for standard authentication routes.
 
 use crate::builder::ActixPassport;
-use crate::core::UserStore;
 use crate::middleware::AuthedUser;
 use crate::password::{LoginCredentials, RegisterCredentials};
 use actix_session::Session;
@@ -12,13 +11,10 @@ const USER_ID_KEY: &str = "actix_passport_user_id";
 /// Handles user registration.
 ///
 /// **POST /auth/register**
-pub async fn register_user<U>(
+pub async fn register_user(
     credentials: web::Json<RegisterCredentials>,
-    framework: web::Data<ActixPassport<U>>,
-) -> impl Responder
-where
-    U: UserStore,
-{
+    framework: web::Data<ActixPassport>,
+) -> impl Responder {
     if let Some(ref password_service) = framework.password_service {
         match password_service.register(credentials.into_inner()).await {
             Ok(user) => HttpResponse::Ok().json(user),
@@ -32,13 +28,12 @@ where
 /// Handles user login.
 ///
 /// **POST /auth/login**
-pub async fn login_user<U>(
+pub async fn login_user(
     credentials: web::Json<LoginCredentials>,
-    framework: web::Data<ActixPassport<U>>,
+    framework: web::Data<ActixPassport>,
     session: Session,
 ) -> impl Responder
 where
-    U: UserStore,
 {
     if let Some(ref password_service) = framework.password_service {
         match password_service.login(credentials.into_inner()).await {

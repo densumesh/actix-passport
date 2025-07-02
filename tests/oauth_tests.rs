@@ -7,7 +7,7 @@
 
 use actix_passport::{
     ActixPassport, ActixPassportBuilder, AuthedUser, GenericOAuthProvider, GitHubOAuthProvider,
-    GoogleOAuthProvider, OAuthConfig, OAuthProvider, SessionAuthMiddleware,
+    GoogleOAuthProvider, OAuthConfig, OAuthProvider,
 };
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{web, App, HttpResponse, Result};
@@ -16,7 +16,7 @@ use common::MockUserStore;
 
 /// Helper function to create OAuth test app
 fn create_oauth_test_app(
-    auth_framework: ActixPassport<MockUserStore>,
+    auth_framework: ActixPassport,
 ) -> App<
     impl actix_web::dev::ServiceFactory<
         actix_web::dev::ServiceRequest,
@@ -26,10 +26,7 @@ fn create_oauth_test_app(
         InitError = (),
     >,
 > {
-    let user_store = auth_framework.user_store.clone();
     App::new()
-        .app_data(web::Data::new(auth_framework))
-        .wrap(SessionAuthMiddleware::new(user_store))
         .wrap(
             SessionMiddleware::builder(
                 CookieSessionStore::default(),
@@ -38,7 +35,7 @@ fn create_oauth_test_app(
             .cookie_secure(false)
             .build(),
         )
-        .configure(actix_passport::routes::configure_routes::<MockUserStore>)
+        .configure(|cfg| auth_framework.configure_routes(cfg))
         .route("/protected", web::get().to(protected_route))
 }
 

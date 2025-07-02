@@ -6,12 +6,11 @@
 /// Authentication middleware schemes for different authentication methods.
 pub mod schemes;
 
+use crate::middleware::schemes::get_user_from_request;
 use crate::types::AuthUser;
 use actix_web::{error::ErrorUnauthorized, FromRequest, HttpMessage, HttpRequest};
+use futures_util::future::{FutureExt, LocalBoxFuture};
 use std::future::{ready, Ready};
-
-pub use schemes::jwt_auth::JwtAuthMiddleware;
-pub use schemes::session_auth::SessionAuthMiddleware;
 
 /// Extractable authenticated user from request.
 ///
@@ -35,13 +34,17 @@ pub struct AuthedUser(pub AuthUser);
 
 impl FromRequest for AuthedUser {
     type Error = actix_web::Error;
-    type Future = Ready<Result<Self, Self::Error>>;
+    type Future = LocalBoxFuture<'static, Result<Self, Self::Error>>;
 
     fn from_request(req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Self::Future {
-        req.extensions().get::<AuthUser>().map_or_else(
-            || ready(Err(ErrorUnauthorized("Authentication required"))),
-            |user| ready(Ok(Self(user.clone()))),
-        )
+        let req = req.clone();
+        async move {
+            get_user_from_request(&req).await.map_or_else(
+                || Err(ErrorUnauthorized("Authentication required")),
+                |user| Ok(Self(user)),
+            )
+        }
+        .boxed_local()
     }
 }
 

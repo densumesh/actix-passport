@@ -34,6 +34,81 @@ pub struct OAuthConfig {
     pub scopes: Vec<String>,
 }
 
+impl OAuthConfig {
+    /// Creates a new builder for `OAuthConfig`.
+    pub fn builder(client_id: String, client_secret: String) -> OAuthConfigBuilder {
+        OAuthConfigBuilder::new(client_id, client_secret)
+    }
+}
+
+/// Builder for `OAuthConfig`.
+pub struct OAuthConfigBuilder {
+    client_id: String,
+    client_secret: String,
+    auth_url: Option<String>,
+    token_url: Option<String>,
+    user_info_url: Option<String>,
+    scopes: Vec<String>,
+}
+
+impl OAuthConfigBuilder {
+    /// Creates a new `OAuthConfigBuilder`.
+    pub fn new(client_id: String, client_secret: String) -> Self {
+        Self {
+            client_id,
+            client_secret,
+            auth_url: None,
+            token_url: None,
+            user_info_url: None,
+            scopes: Vec::new(),
+        }
+    }
+
+    /// Sets the authorization URL.
+    #[must_use]
+    pub fn auth_url(mut self, url: impl Into<String>) -> Self {
+        self.auth_url = Some(url.into());
+        self
+    }
+
+    /// Sets the token URL.
+    #[must_use]
+    pub fn token_url(mut self, url: impl Into<String>) -> Self {
+        self.token_url = Some(url.into());
+        self
+    }
+
+    /// Sets the user info URL.
+    #[must_use]
+    pub fn user_info_url(mut self, url: impl Into<String>) -> Self {
+        self.user_info_url = Some(url.into());
+        self
+    }
+
+    /// Adds a scope to the list of requested scopes.
+    #[must_use]
+    pub fn scope(mut self, scope: impl Into<String>) -> Self {
+        self.scopes.push(scope.into());
+        self
+    }
+
+    /// Builds the `OAuthConfig`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any of the required URLs are not set.
+    pub fn build(self) -> AuthResult<OAuthConfig> {
+        Ok(OAuthConfig {
+            client_id: self.client_id,
+            client_secret: self.client_secret,
+            auth_url: self.auth_url.ok_or_else(|| crate::errors::AuthError::Internal("auth_url is required".to_string()))?,
+            token_url: self.token_url.ok_or_else(|| crate::errors::AuthError::Internal("token_url is required".to_string()))?,
+            user_info_url: self.user_info_url.ok_or_else(|| crate::errors::AuthError::Internal("user_info_url is required".to_string()))?,
+            scopes: self.scopes,
+        })
+    }
+}
+
 /// OAuth token response from provider.
 ///
 /// This represents the response received when exchanging an authorization

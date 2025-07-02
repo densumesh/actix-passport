@@ -82,10 +82,7 @@ async fn main() -> std::io::Result<()> {
                 CookieSessionStore::default(),
                 Key::from(&[0; 64]), // In production, use a secure, persistent key
             ))
-            // Share the framework with the app
-            .app_data(web::Data::new(auth_framework.clone()))
-            // Configure the authentication routes
-            .configure(routes::configure_routes::<InMemoryUserStore>)
+            .configure(|cfg| auth_framework.configure_routes(cfg))
             .route("/", web::get().to(hello_world))
     })
     .bind("127.0.0.1:8080")?

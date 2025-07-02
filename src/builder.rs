@@ -42,18 +42,15 @@ use std::sync::Arc;
 ///     .expect("Failed to build framework");
 /// ```
 #[derive(Clone)]
-pub struct ActixPassport<U>
-where
-    U: UserStore + 'static,
-{
+pub struct ActixPassport {
     /// The user store implementation for persisting user data
-    pub user_store: U,
+    pub user_store: Box<dyn UserStore>,
     /// Optional password authentication service (available when password auth is enabled)
-    pub password_service: Option<PasswordAuthService<U>>,
+    pub password_service: Option<PasswordAuthService>,
     /// Optional OAuth service (available when OAuth providers are configured)
     pub oauth_service: Option<OAuthService>,
     /// Authentication configuration settings
-    pub config: Arc<AuthConfig>,
+    pub(crate) config: Arc<AuthConfig>,
 }
 
 /// Builder for configuring and creating an `ActixPassport`.
@@ -175,12 +172,7 @@ where
         self
     }
 
-    /// Sets the authentication configuration.
-    #[must_use]
-    pub fn with_config(mut self, config: AuthConfig) -> Self {
-        self.config = config;
-        self
-    }
+    
 
     /// Builds the `ActixPassport`.
     ///
@@ -191,32 +183,42 @@ where
     /// # Errors
     ///
     /// Returns an error if `user_store` is not set.
-    pub fn build(self) -> Result<ActixPassport<U>, Box<dyn std::error::Error>> {
+    pub fn build(self) -> Result<ActixPassport, Box<dyn std::error::Error>> {
         let user_store = self
             .user_store
             .ok_or_else(|| AuthError::Internal("A UserStore is required.".to_string()))?;
 
         let password_service = if self.enable_password_auth {
-            Some(PasswordAuthService::new(user_store.clone()))
+            Some(PasswordAuthService::new(Box::new(user_store.clone())))
         } else {
             None
         };
 
-        let oauth_service = if self.oauth_providers.is_empty() {
-            None
-        } else {
+        let has_oauth = !self.oauth_providers.is_empty();
+        let oauth_service = if has_oauth {
             let mut service = OAuthService::new();
             for provider in self.oauth_providers {
                 service.add_provider(provider);
             }
             Some(service)
+        } else {
+            None
         };
 
+        // Auto-enable session auth if password auth or OAuth is enabled
+        let mut config = self.config;
+        if self.enable_password_auth {
+            config.password_auth = true;
+        }
+        if has_oauth {
+            config.oauth_auth = true;
+        }
+
         Ok(ActixPassport {
-            user_store,
+            user_store: Box::new(user_store),
             password_service,
             oauth_service,
-            config: Arc::new(self.config),
+            config: Arc::new(config),
         })
     }
 }

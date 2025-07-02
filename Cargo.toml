@@ -38,10 +38,9 @@ serde_urlencoded = "0.7"
 actix-http = "3.11"
 
 [features]
-default = ["password", "oauth", "jwt"]
+default = ["password", "oauth"]
 password = []
 oauth = []
-jwt = []
 
 [lints.rust]
 missing_docs = "warn"

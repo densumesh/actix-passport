@@ -1,7 +1,6 @@
 //! Handlers for OAuth 2.0 routes.
 
 use crate::builder::ActixPassport;
-use crate::core::UserStore;
 use crate::types::AuthUser;
 use actix_session::Session;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
@@ -24,15 +23,12 @@ pub struct OAuthCallbackParams {
 /// Initiates the OAuth flow for a given provider.
 ///
 /// **GET /auth/{provider}**
-pub async fn oauth_initiate<U>(
+pub async fn oauth_initiate(
     req: HttpRequest,
     provider: web::Path<String>,
-    framework: web::Data<ActixPassport<U>>,
+    framework: web::Data<ActixPassport>,
     session: Session,
-) -> impl Responder
-where
-    U: UserStore,
-{
+) -> impl Responder {
     let provider_name = provider.into_inner();
     if let Some(ref oauth_service) = framework.oauth_service {
         let state = uuid::Uuid::new_v4().to_string();
@@ -67,16 +63,13 @@ where
 /// Handles the callback from the OAuth provider.
 ///
 /// **GET /auth/{provider}/callback**
-pub async fn oauth_callback<U>(
+pub async fn oauth_callback(
     provider: web::Path<String>,
     params: web::Query<OAuthCallbackParams>,
-    framework: web::Data<ActixPassport<U>>,
+    framework: web::Data<ActixPassport>,
     session: Session,
     req: HttpRequest,
-) -> impl Responder
-where
-    U: UserStore,
-{
+) -> impl Responder {
     let provider_name = provider.into_inner();
 
     if let Some(ref oauth_service) = framework.oauth_service {

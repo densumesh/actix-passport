@@ -105,27 +105,19 @@ dyn_clone::clone_trait_object!(UserStore);
 /// This struct contains all the configuration options for the authentication system,
 /// including session settings, JWT configuration, and security options.
 #[derive(Debug, Clone)]
-pub struct AuthConfig {
-    /// How long sessions should last before expiring
-    pub session_duration: chrono::Duration,
-    /// Secret key for JWT token signing (optional)
-    pub jwt_secret: Option<String>,
-    /// List of allowed origins for CORS
-    pub allowed_origins: Vec<String>,
-    /// Whether email verification is required for new users
-    pub require_email_verification: bool,
-    /// How long password reset tokens should be valid
-    pub password_reset_expiry: chrono::Duration,
+#[allow(clippy::struct_excessive_bools)]
+pub(crate) struct AuthConfig {
+    /// Whether password authentication is enabled
+    pub(crate) password_auth: bool,
+    /// Whether OAuth authentication is enabled
+    pub(crate) oauth_auth: bool,
 }
 
 impl Default for AuthConfig {
     fn default() -> Self {
         Self {
-            session_duration: chrono::Duration::days(30),
-            jwt_secret: None,
-            allowed_origins: vec!["http://localhost:3000".to_string()],
-            require_email_verification: false,
-            password_reset_expiry: chrono::Duration::hours(1),
+            password_auth: false,
+            oauth_auth: false,
         }
     }
 }
