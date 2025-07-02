@@ -47,3 +47,4 @@ all = { level = "warn", priority = 3 }
 missing_docs = { level = "warn" }
 unwrap_used = { level = "deny" }
 expect_used = { level = "deny" }
+future_not_send = { level = "allow" }

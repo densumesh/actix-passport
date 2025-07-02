@@ -1,6 +1,6 @@
 //! Handlers for standard authentication routes.
 
-use crate::builder::AuthFramework;
+use crate::builder::ActixPassport;
 use crate::middleware::{utils, AuthedUser};
 use crate::password::{LoginCredentials, RegisterCredentials};
 use crate::{
@@ -15,7 +15,7 @@ use actix_web::{web, HttpResponse, Responder};
 /// **POST /auth/register**
 pub async fn register_user<U, S, H>(
     credentials: web::Json<RegisterCredentials>,
-    framework: web::Data<AuthFramework<U, S, H>>,
+    framework: web::Data<ActixPassport<U, S, H>>,
 ) -> impl Responder
 where
     U: UserStore,
@@ -37,7 +37,7 @@ where
 /// **POST /auth/login**
 pub async fn login_user<U, S, H>(
     credentials: web::Json<LoginCredentials>,
-    framework: web::Data<AuthFramework<U, S, H>>,
+    framework: web::Data<ActixPassport<U, S, H>>,
     session: Session,
 ) -> impl Responder
 where
@@ -76,7 +76,7 @@ where
 /// **POST /auth/logout**
 pub async fn logout_user<U, S, H>(
     session: Session,
-    framework: web::Data<AuthFramework<U, S, H>>,
+    framework: web::Data<ActixPassport<U, S, H>>,
 ) -> impl Responder
 where
     U: UserStore,

@@ -1,6 +1,6 @@
 //! Handlers for OAuth 2.0 routes.
 
-use crate::builder::AuthFramework;
+use crate::builder::ActixPassport;
 use crate::middleware::utils;
 use crate::types::AuthUser;
 use crate::{
@@ -23,7 +23,7 @@ pub struct OAuthCallbackParams {
 pub async fn oauth_initiate<U, S, H>(
     req: HttpRequest,
     provider: web::Path<String>,
-    framework: web::Data<AuthFramework<U, S, H>>,
+    framework: web::Data<ActixPassport<U, S, H>>,
     session: Session,
 ) -> impl Responder
 where
@@ -47,14 +47,16 @@ where
             provider_name
         );
 
-        match oauth_service.authorize_url(&provider_name, &state, &redirect_uri) {
-            Ok(url) => HttpResponse::Found()
-                .append_header(("Location", url))
-                .finish(),
-            Err(_) => {
-                HttpResponse::NotFound().body(format!("Provider not found: {}", provider_name))
-            }
-        }
+        oauth_service
+            .authorize_url(&provider_name, &state, &redirect_uri)
+            .map_or_else(
+                |_| HttpResponse::NotFound().body(format!("Provider not found: {provider_name}")),
+                |url| {
+                    HttpResponse::Found()
+                        .append_header(("Location", url))
+                        .finish()
+                },
+            )
     } else {
         HttpResponse::NotFound().finish()
     }
@@ -66,7 +68,7 @@ where
 pub async fn oauth_callback<U, S, H>(
     provider: web::Path<String>,
     params: web::Query<OAuthCallbackParams>,
-    framework: web::Data<AuthFramework<U, S, H>>,
+    framework: web::Data<ActixPassport<U, S, H>>,
     session: Session,
     req: HttpRequest,
 ) -> impl Responder
@@ -103,13 +105,17 @@ where
         };
 
         // Find or create a user in our system
-        let user = match framework.user_store.find_by_email(&oauth_user.email).await {
+        let user = match framework
+            .user_store
+            .find_by_email(oauth_user.email.as_deref().unwrap_or_default())
+            .await
+        {
             Ok(Some(user)) => user, // User exists
             Ok(None) => {
                 // Create a new user
-                let new_user = AuthUser::new(oauth_user.id)
-                    .with_email(oauth_user.email)
-                    .with_display_name(oauth_user.name.unwrap_or_default());
+                let new_user = AuthUser::new(uuid::Uuid::new_v4().to_string())
+                    .with_email(oauth_user.email.as_deref().unwrap_or_default())
+                    .with_display_name(oauth_user.display_name.as_deref().unwrap_or_default());
                 match framework.user_store.create_user(new_user).await {
                     Ok(user) => user,
                     Err(e) => return HttpResponse::InternalServerError().json(e.to_string()),
