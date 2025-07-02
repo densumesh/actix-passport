@@ -29,6 +29,7 @@ thiserror = "2.0"
 anyhow = "1.0"
 env_logger = "0.11"
 futures-util = "0.3"
+dyn-clone = "1.0.19"
 
 [dev-dependencies]
 tokio-test = "0.4"

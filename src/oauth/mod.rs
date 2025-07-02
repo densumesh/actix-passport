@@ -9,6 +9,7 @@ pub mod service;
 
 use crate::types::AuthResult;
 use async_trait::async_trait;
+use dyn_clone::DynClone;
 use serde::{Deserialize, Serialize};
 
 /// OAuth configuration for a provider.
@@ -92,7 +93,7 @@ pub struct OAuthUser {
 /// }
 /// ```
 #[async_trait]
-pub trait OAuthProvider: Send + Sync {
+pub trait OAuthProvider: Send + Sync + DynClone {
     /// Returns the name of this OAuth provider.
     ///
     /// This should be a lowercase string like "google", "github", etc.
@@ -124,3 +125,5 @@ pub trait OAuthProvider: Send + Sync {
     /// Returns the user information from the OAuth provider.
     async fn exchange_code(&self, code: &str, redirect_uri: &str) -> AuthResult<OAuthUser>;
 }
+
+dyn_clone::clone_trait_object!(OAuthProvider);

@@ -27,13 +27,15 @@ use crate::{
 ///     "github_client_secret".to_string(),
 /// )));
 /// ```
+#[derive(Clone)]
 pub struct OAuthService {
     providers: HashMap<String, Box<dyn OAuthProvider>>,
 }
 
 impl OAuthService {
     /// Creates a new OAuth service.
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             providers: HashMap::new(),
         }
@@ -70,7 +72,8 @@ impl OAuthService {
     /// # Returns
     ///
     /// Returns a reference to the provider if found.
-    #[must_use] pub fn get_provider(&self, name: &str) -> Option<&dyn OAuthProvider> {
+    #[must_use]
+    pub fn get_provider(&self, name: &str) -> Option<&dyn OAuthProvider> {
         self.providers.get(name).map(std::convert::AsRef::as_ref)
     }
 
@@ -79,8 +82,12 @@ impl OAuthService {
     /// # Returns
     ///
     /// Returns a vector of provider names.
-    #[must_use] pub fn list_providers(&self) -> Vec<&str> {
-        self.providers.keys().map(std::string::String::as_str).collect()
+    #[must_use]
+    pub fn list_providers(&self) -> Vec<&str> {
+        self.providers
+            .keys()
+            .map(std::string::String::as_str)
+            .collect()
     }
 
     /// Generates an authorization URL for a specific provider.

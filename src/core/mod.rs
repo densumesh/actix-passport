@@ -4,6 +4,7 @@
 //! including user representation, session management, and error handling.
 
 use async_trait::async_trait;
+use dyn_clone::DynClone;
 use uuid::Uuid;
 
 use crate::types::{AuthResult, AuthUser, Session};
@@ -32,7 +33,7 @@ use crate::types::{AuthResult, AuthUser, Session};
 /// }
 /// ```
 #[async_trait]
-pub trait UserStore: Send + Sync {
+pub trait UserStore: Send + Sync + DynClone {
     /// Finds a user by their unique ID.
     ///
     /// # Arguments
@@ -78,6 +79,8 @@ pub trait UserStore: Send + Sync {
     /// * `id` - The ID of the user to delete
     async fn delete_user(&self, id: &str) -> AuthResult<()>;
 }
+
+dyn_clone::clone_trait_object!(UserStore);
 
 /// Trait for storing and managing user sessions.
 ///

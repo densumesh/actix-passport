@@ -30,6 +30,7 @@ use url::Url;
 ///
 /// let provider = GenericOAuthProvider::new("custom", config);
 /// ```
+#[derive(Clone)]
 pub struct GenericOAuthProvider {
     name: String,
     config: OAuthConfig,
@@ -131,7 +132,9 @@ impl OAuthProvider for GenericOAuthProvider {
                 .or_else(|| user_data["sub"].as_str())
                 .unwrap_or("unknown")
                 .to_string(),
-            email: user_data["email"].as_str().map(std::string::ToString::to_string),
+            email: user_data["email"]
+                .as_str()
+                .map(std::string::ToString::to_string),
             username: user_data["login"]
                 .as_str()
                 .or_else(|| user_data["username"].as_str())

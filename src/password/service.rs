@@ -22,6 +22,7 @@ use serde_json;
 ///     Argon2PasswordHasher::default(),
 /// );
 /// ```
+#[derive(Clone)]
 pub struct PasswordAuthService<U, H>
 where
     U: UserStore,

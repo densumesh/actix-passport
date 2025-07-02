@@ -20,6 +20,7 @@ use async_trait::async_trait;
 ///     "your_google_client_secret".to_string(),
 /// );
 /// ```
+#[derive(Clone)]
 pub struct GoogleOAuthProvider {
     inner: GenericOAuthProvider,
 }
@@ -31,7 +32,8 @@ impl GoogleOAuthProvider {
     ///
     /// * `client_id` - Google OAuth client ID
     /// * `client_secret` - Google OAuth client secret
-    #[must_use] pub fn new(client_id: String, client_secret: String) -> Self {
+    #[must_use]
+    pub fn new(client_id: String, client_secret: String) -> Self {
         let config = OAuthConfig {
             client_id,
             client_secret,

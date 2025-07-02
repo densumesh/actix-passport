@@ -20,6 +20,7 @@ use async_trait::async_trait;
 ///     "your_github_client_secret".to_string(),
 /// );
 /// ```
+#[derive(Clone)]
 pub struct GitHubOAuthProvider {
     inner: GenericOAuthProvider,
 }
