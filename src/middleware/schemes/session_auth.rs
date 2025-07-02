@@ -1,8 +1,8 @@
 use crate::{core::UserStore, types::AuthUser};
-use actix_session::Session;
+use actix_session::SessionExt;
 use actix_web::{
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
-    FromRequest, HttpMessage,
+    HttpMessage,
 };
 use futures_util::future::LocalBoxFuture;
 use std::{
@@ -18,7 +18,7 @@ const USER_ID_KEY: &str = "actix_passport_user_id";
 /// authenticated user into the request extensions so it can be extracted
 /// in handler functions.
 pub struct SessionAuthMiddleware<U> {
-    user_store: Arc<U>,
+    user_store: U,
 }
 
 impl<U> SessionAuthMiddleware<U>
@@ -26,7 +26,7 @@ where
     U: UserStore + 'static,
 {
     /// Creates a new authentication middleware.
-    pub const fn new(user_store: Arc<U>) -> Self {
+    pub const fn new(user_store: U) -> Self {
         Self { user_store }
     }
 }
@@ -35,7 +35,7 @@ impl<S, U, B> Transform<S, ServiceRequest> for SessionAuthMiddleware<U>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error> + 'static,
     S::Future: 'static,
-    U: UserStore + 'static,
+    U: UserStore + Clone + 'static,
     B: 'static,
 {
     type Response = ServiceResponse<B>;
@@ -55,14 +55,14 @@ where
 /// Authentication middleware service.
 pub struct AuthMiddlewareService<S, U> {
     service: Arc<S>,
-    user_store: Arc<U>,
+    user_store: U,
 }
 
 impl<S, U, B> Service<ServiceRequest> for AuthMiddlewareService<S, U>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error> + 'static,
     S::Future: 'static,
-    U: UserStore + 'static,
+    U: UserStore + Clone + 'static,
     B: 'static,
 {
     type Response = ServiceResponse<B>;
@@ -87,13 +87,11 @@ where
 
 /// Extracts authenticated user from session.
 #[allow(clippy::future_not_send)]
-async fn get_user_from_session<U>(req: &ServiceRequest, user_store: Arc<U>) -> Option<AuthUser>
+async fn get_user_from_session<U>(req: &ServiceRequest, user_store: U) -> Option<AuthUser>
 where
     U: UserStore,
 {
-    let session = Session::from_request(req.request(), &mut actix_web::dev::Payload::None)
-        .await
-        .ok()?;
+    let session = req.get_session();
 
     let user_id = session.get::<String>(USER_ID_KEY).ok()??;
 

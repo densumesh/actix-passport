@@ -1,11 +1,11 @@
-use actix_session::{SessionMiddleware, storage::CookieSessionStore};
-use actix_web::{cookie::Key, web, App, HttpServer};
 use actix_passport::{
-    routes,
-    ActixPassportBuilder,
     core::UserStore,
+    routes,
     types::{AuthResult, AuthUser},
+    ActixPassportBuilder, AuthedUser,
 };
+use actix_session::{storage::CookieSessionStore, SessionMiddleware};
+use actix_web::{cookie::Key, web, App, HttpResponse, HttpServer};
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -25,12 +25,18 @@ impl UserStore for InMemoryUserStore {
 
     async fn find_by_email(&self, email: &str) -> AuthResult<Option<AuthUser>> {
         let users = self.users.lock().unwrap();
-        Ok(users.values().find(|u| u.email.as_deref() == Some(email)).cloned())
+        Ok(users
+            .values()
+            .find(|u| u.email.as_deref() == Some(email))
+            .cloned())
     }
 
     async fn find_by_username(&self, username: &str) -> AuthResult<Option<AuthUser>> {
         let users = self.users.lock().unwrap();
-        Ok(users.values().find(|u| u.username.as_deref() == Some(username)).cloned())
+        Ok(users
+            .values()
+            .find(|u| u.username.as_deref() == Some(username))
+            .cloned())
     }
 
     async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> {
@@ -39,8 +45,16 @@ impl UserStore for InMemoryUserStore {
         Ok(user)
     }
 
-    async fn update_user(&self, _user: AuthUser) -> AuthResult<AuthUser> { unimplemented!() }
-    async fn delete_user(&self, _id: &str) -> AuthResult<()> { unimplemented!() }
+    async fn update_user(&self, _user: AuthUser) -> AuthResult<AuthUser> {
+        unimplemented!()
+    }
+    async fn delete_user(&self, _id: &str) -> AuthResult<()> {
+        unimplemented!()
+    }
+}
+
+async fn hello_world(user: AuthedUser) -> HttpResponse {
+    HttpResponse::Ok().body(format!("Hello, {:?}!", user.0.username))
 }
 
 #[actix_web::main]
@@ -72,6 +86,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(auth_framework.clone()))
             // Configure the authentication routes
             .configure(routes::configure_routes::<InMemoryUserStore>)
+            .route("/", web::get().to(hello_world))
     })
     .bind("127.0.0.1:8080")?
     .run()
