@@ -3,16 +3,15 @@
 //! This module provides middleware for handling authentication in actix-web applications.
 //! It includes session-based authentication, JWT token validation, and user identity injection.
 
-pub mod jwt_auth;
-pub mod session_auth;
+pub mod schemes;
 pub mod utils;
 
 use crate::types::AuthUser;
 use actix_web::{error::ErrorUnauthorized, FromRequest, HttpMessage, HttpRequest};
 use std::future::{ready, Ready};
 
-pub use jwt_auth::JwtAuthMiddleware;
-pub use session_auth::AuthMiddleware;
+pub use schemes::jwt_auth::JwtAuthMiddleware;
+pub use schemes::session_auth::SessionAuthMiddleware;
 
 /// Extractable authenticated user from request.
 ///

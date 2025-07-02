@@ -7,7 +7,7 @@ use actix_web::{
 use futures_util::future::LocalBoxFuture;
 use std::{
     future::{ready, Ready},
-    rc::Rc,
+    sync::Arc,
 };
 use uuid::Uuid;
 
@@ -26,11 +26,11 @@ use uuid::Uuid;
 /// let app = App::new()
 ///     .wrap(AuthMiddleware::new(session_store));
 /// ```
-pub struct AuthMiddleware<S> {
-    session_store: Rc<S>,
+pub struct SessionAuthMiddleware<S> {
+    session_store: Arc<S>,
 }
 
-impl<S> AuthMiddleware<S>
+impl<S> SessionAuthMiddleware<S>
 where
     S: SessionStore + 'static,
 {
@@ -41,12 +41,12 @@ where
     /// * `session_store` - The session store implementation
     pub fn new(session_store: S) -> Self {
         Self {
-            session_store: Rc::new(session_store),
+            session_store: Arc::new(session_store),
         }
     }
 }
 
-impl<S, B> Transform<S, ServiceRequest> for AuthMiddleware<B>
+impl<S, B> Transform<S, ServiceRequest> for SessionAuthMiddleware<B>
 where
     // `S` must be `'static` so the boxed future lives long enough.
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error> + 'static,
@@ -61,7 +61,7 @@ where
 
     fn new_transform(&self, service: S) -> Self::Future {
         ready(Ok(AuthMiddlewareService {
-            service: Rc::new(service),
+            service: Arc::new(service),
             session_store: self.session_store.clone(),
         }))
     }
@@ -74,8 +74,8 @@ where
 pub struct AuthMiddlewareService<S, B> {
     // Hold the inner service behind an `Rc` so it can be cheaply cloned and
     // moved into async blocks without lifetime issues.
-    service: Rc<S>,
-    session_store: Rc<B>,
+    service: Arc<S>,
+    session_store: Arc<B>,
 }
 
 impl<S, B> Service<ServiceRequest> for AuthMiddlewareService<S, B>
@@ -109,7 +109,8 @@ where
 ///
 /// This function checks the current session for a valid user ID and
 /// loads the corresponding user from the session store.
-async fn get_user_from_session<S>(req: &ServiceRequest, session_store: Rc<S>) -> Option<AuthUser>
+#[allow(clippy::future_not_send)]
+async fn get_user_from_session<S>(req: &ServiceRequest, session_store: Arc<S>) -> Option<AuthUser>
 where
     S: SessionStore,
 {
