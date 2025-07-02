@@ -36,7 +36,7 @@ impl JwtAuthMiddleware {
     ///
     /// * `secret` - The secret key used to sign and verify JWT tokens
     #[must_use]
-    pub fn new(secret: String) -> Self {
+    pub const fn new(secret: String) -> Self {
         Self { secret }
     }
 }
