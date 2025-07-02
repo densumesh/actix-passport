@@ -8,14 +8,19 @@ use crate::{
     middleware::AuthMiddleware,
     routes::{AuthRoutes, RouteConfig},
 };
-use actix_web::{web, dev::ServiceFactory, Error as ActixError, HttpRequest};
+use actix_web::{dev::ServiceFactory, web, Error as ActixError, HttpRequest};
 use std::sync::Arc;
 
 #[cfg(feature = "password")]
-use crate::password::{Argon2PasswordHasher, PasswordAuthService, PasswordHasher};
+use crate::password::{
+    password::Argon2PasswordHasher, service::PasswordAuthService, PasswordHasher,
+};
 
 #[cfg(feature = "oauth")]
-use crate::oauth::{GitHubOAuthProvider, GoogleOAuthProvider, OAuthService};
+use crate::oauth::{
+    providers::{github_provider::GitHubOAuthProvider, google_provider::GoogleOAuthProvider},
+    service::OAuthService,
+};
 
 /// Builder for configuring the authentication system.
 ///
@@ -600,10 +605,8 @@ where
     ///     );
     /// ```
     pub fn configure_routes(&self, cfg: &mut web::ServiceConfig) {
-        let mut routes = AuthRoutes::new(
-            (*self.user_store).clone(),
-            (*self.session_store).clone(),
-        ).with_config(self.route_config.clone());
+        let mut routes = AuthRoutes::new((*self.user_store).clone(), (*self.session_store).clone())
+            .with_config(self.route_config.clone());
 
         #[cfg(feature = "password")]
         if self.enable_password_auth {

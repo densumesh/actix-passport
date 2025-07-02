@@ -4,13 +4,14 @@
 //! with password and OAuth authentication using actix-passport.
 
 use actix_passport::{
-    AuthBuilder, AuthUser, AuthResult, SessionStore, UserStore, 
-    AuthenticatedUser, OptionalAuthenticatedUser,
+    AuthBuilder, AuthResult, AuthUser, AuthedUser, OptionalAuthedUser, SessionStore, UserStore,
 };
 use actix_session::{config::PersistentSession, storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{
     cookie::{Key, SameSite},
-    get, middleware::Logger, web, App, HttpResponse, HttpServer, Responder, Result,
+    get,
+    middleware::Logger,
+    web, App, HttpResponse, HttpServer, Responder, Result,
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Duration, Utc};
@@ -96,7 +97,10 @@ impl InMemorySessionStore {
 
 #[async_trait]
 impl SessionStore for InMemorySessionStore {
-    async fn create_session(&self, session: actix_passport::Session) -> AuthResult<actix_passport::Session> {
+    async fn create_session(
+        &self,
+        session: actix_passport::Session,
+    ) -> AuthResult<actix_passport::Session> {
         let mut sessions = self.sessions.write().unwrap();
         sessions.insert(session.id, session.clone());
         Ok(session)
@@ -107,7 +111,10 @@ impl SessionStore for InMemorySessionStore {
         Ok(sessions.get(&id).cloned())
     }
 
-    async fn update_session(&self, session: actix_passport::Session) -> AuthResult<actix_passport::Session> {
+    async fn update_session(
+        &self,
+        session: actix_passport::Session,
+    ) -> AuthResult<actix_passport::Session> {
         let mut sessions = self.sessions.write().unwrap();
         sessions.insert(session.id, session.clone());
         Ok(session)
@@ -139,7 +146,7 @@ impl SessionStore for InMemorySessionStore {
 
 /// Home page - shows different content for authenticated vs unauthenticated users.
 #[get("/")]
-async fn home(user: OptionalAuthenticatedUser) -> Result<impl Responder> {
+async fn home(user: OptionalAuthedUser) -> Result<impl Responder> {
     match user.0 {
         Some(user) => Ok(HttpResponse::Ok().json(serde_json::json!({
             "message": format!("Welcome back, {}!", user.display_name.unwrap_or(user.id)),
@@ -155,7 +162,7 @@ async fn home(user: OptionalAuthenticatedUser) -> Result<impl Responder> {
 
 /// Protected dashboard - requires authentication.
 #[get("/dashboard")]
-async fn dashboard(user: AuthenticatedUser) -> Result<impl Responder> {
+async fn dashboard(user: AuthedUser) -> Result<impl Responder> {
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "message": "Welcome to your dashboard!",
         "user": user.0,
@@ -180,7 +187,7 @@ async fn public_api() -> Result<impl Responder> {
 
 /// Protected API endpoint.
 #[get("/api/protected")]
-async fn protected_api(user: AuthenticatedUser) -> Result<impl Responder> {
+async fn protected_api(user: AuthedUser) -> Result<impl Responder> {
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "message": "This is a protected API endpoint",
         "user_id": user.0.id,
@@ -236,18 +243,15 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         // Create session middleware
         let session_key = Key::generate();
-        let session_middleware = SessionMiddleware::builder(
-            CookieSessionStore::default(),
-            session_key,
-        )
-        .cookie_name("actix-passport-session".to_string())
-        .cookie_secure(false) // Set to true in production with HTTPS
-        .cookie_same_site(SameSite::Lax)
-        .session_lifecycle(
-            PersistentSession::default()
-                .session_ttl(Duration::days(30).to_std().unwrap()),
-        )
-        .build();
+        let session_middleware =
+            SessionMiddleware::builder(CookieSessionStore::default(), session_key)
+                .cookie_name("actix-passport-session".to_string())
+                .cookie_secure(false) // Set to true in production with HTTPS
+                .cookie_same_site(SameSite::Lax)
+                .session_lifecycle(
+                    PersistentSession::default().session_ttl(Duration::days(30).to_std().unwrap()),
+                )
+                .build();
 
         App::new()
             .wrap(Logger::default())
@@ -257,10 +261,7 @@ async fn main() -> std::io::Result<()> {
             .service(dashboard)
             .service(public_api)
             .service(protected_api)
-            .service(
-                web::scope("/auth")
-                    .configure(|cfg| auth.configure_routes(cfg))
-            )
+            .service(web::scope("/auth").configure(|cfg| auth.configure_routes(cfg)))
     })
     .bind("127.0.0.1:8080")?
     .run()

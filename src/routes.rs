@@ -4,19 +4,19 @@
 //! operations like login, registration, logout, and OAuth callbacks.
 
 use crate::{
-    core::{AuthError, AuthResult, AuthUser, SessionStore, UserStore},
-    middleware::{session_utils, AuthenticatedUser, OptionalAuthenticatedUser},
+    core::{ SessionStore, UserStore},
+    middleware:: AuthedUser,
 };
 use actix_session::Session;
-use actix_web::{web, HttpRequest, HttpResponse, Responder, Result};
+use actix_web::{web, HttpResponse, Responder, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 #[cfg(feature = "password")]
-use crate::password::{LoginCredentials, PasswordAuthService, RegisterCredentials};
+use crate::password::{LoginCredentials, RegisterCredentials};
 
 #[cfg(feature = "oauth")]
-use crate::oauth::OAuthService;
+use crate::oauth::service::OAuthService;
 
 /// Response for successful authentication.
 ///
@@ -242,7 +242,7 @@ where
     /// # Route
     ///
     /// `GET /auth/me`
-    pub async fn get_current_user(user: AuthenticatedUser) -> Result<impl Responder> {
+    pub async fn get_current_user(user: AuthedUser) -> Result<impl Responder> {
         Ok(HttpResponse::Ok().json(AuthResponse {
             user: user.0,
             message: None,

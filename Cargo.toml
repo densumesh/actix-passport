@@ -38,3 +38,6 @@ default = ["password", "oauth", "jwt"]
 password = []
 oauth = []
 jwt = []
+
+[lints.clippy]
+pedantic = { level = "warn" }

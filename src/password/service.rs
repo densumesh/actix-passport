@@ -1,140 +1,12 @@
-//! Password-based authentication module.
-//!
-//! This module provides functionality for username/password authentication,
-//! including password hashing, verification, and user registration.
-
-use crate::core::{AuthError, AuthResult, AuthUser, UserStore};
-use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
-    Argon2,
+use crate::{
+    core::UserStore,
+    errors::AuthError,
+    password::{LoginCredentials, RegisterCredentials},
+    types::{AuthResult, AuthUser},
+    PasswordHasher,
 };
-use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 
-/// Credentials for password-based login.
-///
-/// This struct represents the user's login credentials, supporting
-/// both email and username-based authentication.
-///
-/// # Examples
-///
-/// ```rust
-/// use actix_passport::LoginCredentials;
-///
-/// let creds = LoginCredentials {
-///     identifier: "user@example.com".to_string(),
-///     password: "secure_password".to_string(),
-/// };
-/// ```
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LoginCredentials {
-    /// Email address or username
-    pub identifier: String,
-    /// Plain text password
-    pub password: String,
-}
-
-/// Credentials for user registration.
-///
-/// This struct contains all the information needed to register a new user
-/// with password-based authentication.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RegisterCredentials {
-    /// User's email address
-    pub email: String,
-    /// Desired username (optional)
-    pub username: Option<String>,
-    /// Plain text password
-    pub password: String,
-    /// User's display name (optional)
-    pub display_name: Option<String>,
-}
-
-/// Trait for password hashing and verification.
-///
-/// This trait allows for pluggable password hashing implementations.
-/// The default implementation uses Argon2, but users can provide
-/// their own implementations for different hashing algorithms.
-///
-/// # Examples
-///
-/// ```rust
-/// use actix_passport::{PasswordHasher, AuthResult};
-/// use async_trait::async_trait;
-///
-/// struct MyPasswordHasher;
-///
-/// #[async_trait]
-/// impl PasswordHasher for MyPasswordHasher {
-///     async fn hash_password(&self, password: &str) -> AuthResult<String> {
-///         // Custom hashing implementation
-///         Ok("hashed_password".to_string())
-///     }
-///     
-///     async fn verify_password(&self, password: &str, hash: &str) -> AuthResult<bool> {
-///         // Custom verification implementation
-///         Ok(password == "correct_password")
-///     }
-/// }
-/// ```
-#[async_trait]
-pub trait PasswordHasher: Send + Sync {
-    /// Hashes a plain text password.
-    ///
-    /// # Arguments
-    ///
-    /// * `password` - The plain text password to hash
-    ///
-    /// # Returns
-    ///
-    /// Returns the hashed password as a string.
-    async fn hash_password(&self, password: &str) -> AuthResult<String>;
-
-    /// Verifies a password against its hash.
-    ///
-    /// # Arguments
-    ///
-    /// * `password` - The plain text password to verify
-    /// * `hash` - The stored password hash
-    ///
-    /// # Returns
-    ///
-    /// Returns `true` if the password matches the hash, `false` otherwise.
-    async fn verify_password(&self, password: &str, hash: &str) -> AuthResult<bool>;
-}
-
-/// Default Argon2 password hasher implementation.
-///
-/// This is the default password hasher that uses the Argon2 algorithm,
-/// which is currently recommended for password hashing.
-#[derive(Debug, Default)]
-pub struct Argon2PasswordHasher;
-
-#[async_trait]
-impl PasswordHasher for Argon2PasswordHasher {
-    async fn hash_password(&self, password: &str) -> AuthResult<String> {
-        let salt = SaltString::generate(&mut OsRng);
-        let argon2 = Argon2::default();
-        
-        let password_hash = argon2
-            .hash_password(password.as_bytes(), &salt)
-            .map_err(|e| AuthError::Internal(format!("Password hashing failed: {}", e)))?;
-
-        Ok(password_hash.to_string())
-    }
-
-    async fn verify_password(&self, password: &str, hash: &str) -> AuthResult<bool> {
-        let parsed_hash = PasswordHash::new(hash)
-            .map_err(|e| AuthError::Internal(format!("Invalid password hash: {}", e)))?;
-
-        let argon2 = Argon2::default();
-        
-        match argon2.verify_password(password.as_bytes(), &parsed_hash) {
-            Ok(()) => Ok(true),
-            Err(_) => Ok(false),
-        }
-    }
-}
+use serde_json;
 
 /// Service for password-based authentication operations.
 ///
@@ -195,9 +67,13 @@ where
     pub async fn login(&self, credentials: LoginCredentials) -> AuthResult<AuthUser> {
         // Try to find user by email first, then by username
         let user = if credentials.identifier.contains('@') {
-            self.user_store.find_by_email(&credentials.identifier).await?
+            self.user_store
+                .find_by_email(&credentials.identifier)
+                .await?
         } else {
-            self.user_store.find_by_username(&credentials.identifier).await?
+            self.user_store
+                .find_by_username(&credentials.identifier)
+                .await?
         };
 
         let user = user.ok_or(AuthError::UserNotFound)?;
@@ -249,11 +125,14 @@ where
         }
 
         // Hash the password
-        let password_hash = self.password_hasher.hash_password(&credentials.password).await?;
+        let password_hash = self
+            .password_hasher
+            .hash_password(&credentials.password)
+            .await?;
 
         // Create user with hashed password in metadata
-        let mut user = AuthUser::new(uuid::Uuid::new_v4().to_string())
-            .with_email(credentials.email);
+        let mut user =
+            AuthUser::new(uuid::Uuid::new_v4().to_string()).with_email(credentials.email);
 
         if let Some(username) = credentials.username {
             user = user.with_username(username);
