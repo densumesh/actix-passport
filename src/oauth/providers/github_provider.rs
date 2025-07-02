@@ -1,6 +1,7 @@
 use crate::{
-    errors::AuthError, providers::generic_provider::GenericOAuthProvider, types::AuthResult,
-    OAuthConfig, OAuthProvider, OAuthUser,
+    oauth::providers::generic_provider::GenericOAuthProvider,
+    oauth::{OAuthConfig, OAuthProvider, OAuthUser},
+    types::AuthResult,
 };
 use async_trait::async_trait;
 
@@ -30,6 +31,7 @@ impl GitHubOAuthProvider {
     ///
     /// * `client_id` - GitHub OAuth client ID
     /// * `client_secret` - GitHub OAuth client secret
+    #[must_use]
     pub fn new(client_id: String, client_secret: String) -> Self {
         let config = OAuthConfig {
             client_id,
@@ -48,7 +50,7 @@ impl GitHubOAuthProvider {
 
 #[async_trait]
 impl OAuthProvider for GitHubOAuthProvider {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "github"
     }
 
@@ -57,30 +59,6 @@ impl OAuthProvider for GitHubOAuthProvider {
     }
 
     async fn exchange_code(&self, code: &str, redirect_uri: &str) -> AuthResult<OAuthUser> {
-        let mut oauth_user = self.inner.exchange_code(code, redirect_uri).await?;
-
-        // GitHub doesn't always include email in the user info response
-        // We need to make a separate request to get the user's email
-        if oauth_user.email.is_none() {
-            if let Ok(email) = self.fetch_github_email(&oauth_user.raw_data).await {
-                oauth_user.email = Some(email);
-            }
-        }
-
-        Ok(oauth_user)
-    }
-}
-
-impl GitHubOAuthProvider {
-    /// Fetches the user's primary email from GitHub API.
-    ///
-    /// GitHub sometimes doesn't include the email in the user info response,
-    /// so we need to make a separate API call to get it.
-    async fn fetch_github_email(&self, _user_data: &serde_json::Value) -> AuthResult<String> {
-        // This would require the access token from the previous request
-        // For now, we'll just return an error
-        Err(AuthError::OAuth(
-            "Email fetching not implemented yet".to_string(),
-        ))
+        self.inner.exchange_code(code, redirect_uri).await
     }
 }

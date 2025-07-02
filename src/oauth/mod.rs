@@ -107,6 +107,10 @@ pub trait OAuthProvider: Send + Sync {
     /// # Returns
     ///
     /// Returns the URL the user should be redirected to for authorization.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the authorization URL cannot be generated.
     fn authorize_url(&self, state: &str, redirect_uri: &str) -> AuthResult<String>;
     /// Exchanges an authorization code for user information.
     ///

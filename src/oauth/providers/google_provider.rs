@@ -1,6 +1,7 @@
 use crate::{
-    providers::generic_provider::GenericOAuthProvider, types::AuthResult, OAuthConfig,
-    OAuthProvider, OAuthUser,
+    oauth::providers::generic_provider::GenericOAuthProvider,
+    oauth::{OAuthConfig, OAuthProvider, OAuthUser},
+    types::AuthResult,
 };
 use async_trait::async_trait;
 
@@ -30,7 +31,7 @@ impl GoogleOAuthProvider {
     ///
     /// * `client_id` - Google OAuth client ID
     /// * `client_secret` - Google OAuth client secret
-    pub fn new(client_id: String, client_secret: String) -> Self {
+    #[must_use] pub fn new(client_id: String, client_secret: String) -> Self {
         let config = OAuthConfig {
             client_id,
             client_secret,
@@ -52,7 +53,7 @@ impl GoogleOAuthProvider {
 
 #[async_trait]
 impl OAuthProvider for GoogleOAuthProvider {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "google"
     }
 

@@ -2,7 +2,7 @@ use crate::{core::SessionStore, types::AuthUser};
 use actix_session::Session;
 use actix_web::{
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
-    FromRequest,
+    FromRequest, HttpMessage,
 };
 use futures_util::future::LocalBoxFuture;
 use std::{
@@ -141,29 +141,28 @@ where
             .data
             .get("email")
             .and_then(|v| v.as_str())
-            .map(|s| s.to_string()),
+            .map(std::string::ToString::to_string),
         username: stored_session
             .data
             .get("username")
             .and_then(|v| v.as_str())
-            .map(|s| s.to_string()),
+            .map(std::string::ToString::to_string),
         display_name: stored_session
             .data
             .get("display_name")
             .and_then(|v| v.as_str())
-            .map(|s| s.to_string()),
+            .map(std::string::ToString::to_string),
         avatar_url: stored_session
             .data
             .get("avatar_url")
             .and_then(|v| v.as_str())
-            .map(|s| s.to_string()),
+            .map(std::string::ToString::to_string),
         created_at: stored_session
             .data
             .get("created_at")
             .and_then(|v| v.as_str())
             .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
-            .map(|dt| dt.with_timezone(&chrono::Utc))
-            .unwrap_or_else(|| chrono::Utc::now()),
+            .map_or_else(chrono::Utc::now, |dt| dt.with_timezone(&chrono::Utc)),
         last_login: stored_session
             .data
             .get("last_login")
@@ -177,7 +176,6 @@ where
             .cloned()
             .unwrap_or_default()
             .into_iter()
-            .map(|(k, v)| (k, v))
             .collect(),
     };
 

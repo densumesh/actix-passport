@@ -17,6 +17,7 @@ use uuid::Uuid;
 /// # Returns
 ///
 /// Returns a new session with user data stored in the session data.
+#[must_use]
 pub fn create_user_session(user: &AuthUser, duration: Duration) -> Session {
     let mut session_data = HashMap::new();
 
@@ -82,10 +83,14 @@ pub fn create_user_session(user: &AuthUser, duration: Duration) -> Session {
 /// # Returns
 ///
 /// Returns `Ok(())` if successful, or an error if the session operation fails.
+///
+/// # Errors
+///
+/// Returns an error if the session operation fails.
 pub fn set_session_id(actix_session: &ActixSession, session_id: Uuid) -> AuthResult<()> {
     actix_session
         .insert("session_id", session_id.to_string())
-        .map_err(|e| AuthError::Internal(format!("Failed to set session ID: {}", e)))?;
+        .map_err(|e| AuthError::Internal(format!("Failed to set session ID: {e}")))?;
     Ok(())
 }
 

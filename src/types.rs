@@ -43,7 +43,7 @@ pub struct AuthUser {
 }
 
 impl AuthUser {
-    /// Creates a new AuthUser with the given ID.
+    /// Creates a new `AuthUser` with the given ID.
     ///
     /// # Arguments
     ///
@@ -84,6 +84,7 @@ impl AuthUser {
     /// let user = AuthUser::new("user123").with_email("user@example.com");
     /// assert_eq!(user.email, Some("user@example.com".to_string()));
     /// ```
+    #[must_use]
     pub fn with_email(mut self, email: impl Into<String>) -> Self {
         self.email = Some(email.into());
         self
@@ -94,6 +95,7 @@ impl AuthUser {
     /// # Arguments
     ///
     /// * `username` - The user's username
+    #[must_use]
     pub fn with_username(mut self, username: impl Into<String>) -> Self {
         self.username = Some(username.into());
         self
@@ -104,6 +106,7 @@ impl AuthUser {
     /// # Arguments
     ///
     /// * `display_name` - The user's display name
+    #[must_use]
     pub fn with_display_name(mut self, display_name: impl Into<String>) -> Self {
         self.display_name = Some(display_name.into());
         self

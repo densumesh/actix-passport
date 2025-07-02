@@ -3,7 +3,7 @@
 //! This module provides functionality for username/password authentication,
 //! including password hashing, verification, and user registration.
 
-pub mod password;
+pub mod hasher;
 pub mod service;
 
 use crate::types::AuthResult;

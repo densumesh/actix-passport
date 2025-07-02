@@ -39,10 +39,10 @@ impl FromRequest for AuthedUser {
     type Future = Ready<Result<Self, Self::Error>>;
 
     fn from_request(req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Self::Future {
-        match req.extensions().get::<AuthUser>() {
-            Some(user) => ready(Ok(AuthedUser(user.clone()))),
-            None => ready(Err(ErrorUnauthorized("Authentication required"))),
-        }
+        req.extensions().get::<AuthUser>().map_or_else(
+            || ready(Err(ErrorUnauthorized("Authentication required"))),
+            |user| ready(Ok(Self(user.clone()))),
+        )
     }
 }
 
@@ -75,6 +75,6 @@ impl FromRequest for OptionalAuthedUser {
 
     fn from_request(req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Self::Future {
         let user = req.extensions().get::<AuthUser>().cloned();
-        ready(Ok(OptionalAuthedUser(user)))
+        ready(Ok(Self(user)))
     }
 }

@@ -1,9 +1,8 @@
 use crate::{
     core::UserStore,
     errors::AuthError,
-    password::{LoginCredentials, RegisterCredentials},
+    password::{LoginCredentials, PasswordHasher, RegisterCredentials},
     types::{AuthResult, AuthUser},
-    PasswordHasher,
 };
 
 use serde_json;
@@ -43,7 +42,7 @@ where
     ///
     /// * `user_store` - The user store implementation
     /// * `password_hasher` - The password hasher implementation
-    pub fn new(user_store: U, password_hasher: H) -> Self {
+    pub const fn new(user_store: U, password_hasher: H) -> Self {
         Self {
             user_store,
             password_hasher,
@@ -113,13 +112,13 @@ where
     /// or if the user creation fails.
     pub async fn register(&self, credentials: RegisterCredentials) -> AuthResult<AuthUser> {
         // Check if email already exists
-        if let Some(_) = self.user_store.find_by_email(&credentials.email).await? {
+        if (self.user_store.find_by_email(&credentials.email).await?).is_some() {
             return Err(AuthError::Internal("Email already exists".to_string()));
         }
 
         // Check if username already exists (if provided)
         if let Some(ref username) = credentials.username {
-            if let Some(_) = self.user_store.find_by_username(username).await? {
+            if (self.user_store.find_by_username(username).await?).is_some() {
                 return Err(AuthError::Internal("Username already exists".to_string()));
             }
         }

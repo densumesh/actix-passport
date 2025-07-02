@@ -35,6 +35,7 @@ impl JwtAuthMiddleware {
     /// # Arguments
     ///
     /// * `secret` - The secret key used to sign and verify JWT tokens
+    #[must_use]
     pub fn new(secret: String) -> Self {
         Self { secret }
     }
@@ -85,7 +86,7 @@ where
 
         Box::pin(async move {
             // Try to get user from JWT token
-            if let Some(user) = get_user_from_jwt(&req, &secret).await {
+            if let Some(user) = get_user_from_jwt(&req, &secret) {
                 req.extensions_mut().insert(user);
             }
 
@@ -99,7 +100,7 @@ where
 /// This function looks for a JWT token in the Authorization header,
 /// validates it, and extracts the user information.
 #[cfg(feature = "jwt")]
-async fn get_user_from_jwt(req: &ServiceRequest, secret: &str) -> Option<AuthUser> {
+fn get_user_from_jwt(req: &ServiceRequest, secret: &str) -> Option<AuthUser> {
     use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
     use serde::{Deserialize, Serialize};
 

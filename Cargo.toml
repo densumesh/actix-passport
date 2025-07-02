@@ -40,4 +40,9 @@ oauth = []
 jwt = []
 
 [lints.clippy]
-pedantic = { level = "warn" }
+pedantic = { level = "warn", priority = 1 }
+nursery = { level = "warn", priority = 2 }
+all = { level = "warn", priority = 3 }
+missing_docs = { level = "warn" }
+unwrap_used = { level = "deny" }
+expect_used = { level = "deny" }

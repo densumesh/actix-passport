@@ -27,12 +27,12 @@ pub enum AuthError {
 impl From<AuthError> for ActixError {
     fn from(err: AuthError) -> Self {
         match err {
-            AuthError::UserNotFound => ActixError::from(actix_web::error::ErrorNotFound(err)),
+            AuthError::UserNotFound => actix_web::error::ErrorNotFound(err),
             AuthError::InvalidCredentials | AuthError::Unauthorized => {
-                ActixError::from(actix_web::error::ErrorUnauthorized(err))
+                actix_web::error::ErrorUnauthorized(err)
             }
-            AuthError::SessionExpired => ActixError::from(actix_web::error::ErrorUnauthorized(err)),
-            _ => ActixError::from(actix_web::error::ErrorInternalServerError(err)),
+            AuthError::SessionExpired => actix_web::error::ErrorUnauthorized(err),
+            _ => actix_web::error::ErrorInternalServerError(err),
         }
     }
 }

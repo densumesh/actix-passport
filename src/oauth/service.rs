@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 
-use crate::{errors::AuthError, types::AuthResult, OAuthProvider, OAuthUser};
+use crate::{
+    errors::AuthError,
+    oauth::{OAuthProvider, OAuthUser},
+    types::AuthResult,
+};
 
 /// OAuth service for managing multiple OAuth providers.
 ///
@@ -29,7 +33,7 @@ pub struct OAuthService {
 
 impl OAuthService {
     /// Creates a new OAuth service.
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             providers: HashMap::new(),
         }
@@ -66,8 +70,8 @@ impl OAuthService {
     /// # Returns
     ///
     /// Returns a reference to the provider if found.
-    pub fn get_provider(&self, name: &str) -> Option<&dyn OAuthProvider> {
-        self.providers.get(name).map(|p| p.as_ref())
+    #[must_use] pub fn get_provider(&self, name: &str) -> Option<&dyn OAuthProvider> {
+        self.providers.get(name).map(std::convert::AsRef::as_ref)
     }
 
     /// Lists all available provider names.
@@ -75,8 +79,8 @@ impl OAuthService {
     /// # Returns
     ///
     /// Returns a vector of provider names.
-    pub fn list_providers(&self) -> Vec<&str> {
-        self.providers.keys().map(|s| s.as_str()).collect()
+    #[must_use] pub fn list_providers(&self) -> Vec<&str> {
+        self.providers.keys().map(std::string::String::as_str).collect()
     }
 
     /// Generates an authorization URL for a specific provider.
@@ -102,7 +106,7 @@ impl OAuthService {
     ) -> AuthResult<String> {
         let provider = self
             .get_provider(provider_name)
-            .ok_or_else(|| AuthError::OAuth(format!("Provider '{}' not found", provider_name)))?;
+            .ok_or_else(|| AuthError::OAuth(format!("Provider '{provider_name}' not found")))?;
 
         provider.authorize_url(state, redirect_uri)
     }
@@ -130,7 +134,7 @@ impl OAuthService {
     ) -> AuthResult<OAuthUser> {
         let provider = self
             .get_provider(provider_name)
-            .ok_or_else(|| AuthError::OAuth(format!("Provider '{}' not found", provider_name)))?;
+            .ok_or_else(|| AuthError::OAuth(format!("Provider '{provider_name}' not found")))?;
 
         provider.exchange_code(code, redirect_uri).await
     }
