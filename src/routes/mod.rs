@@ -34,12 +34,12 @@ impl ActixPassport {
 
         #[cfg(feature = "password")]
         if self.config.password_auth {
-            self.configure_password_routes(cfg);
+            Self::configure_password_routes(cfg);
         }
 
         #[cfg(feature = "oauth")]
         if self.config.oauth_auth {
-            self.configure_oauth_routes(cfg);
+            Self::configure_oauth_routes(cfg);
         }
     }
 }
@@ -48,7 +48,7 @@ impl ActixPassport {
     /// Configures password authentication routes.
     ///
     /// Adds routes for password-based authentication including registration, login, and logout.
-    fn configure_password_routes(&self, cfg: &mut web::ServiceConfig) {
+    fn configure_password_routes(cfg: &mut web::ServiceConfig) {
         let auth_scope = web::scope("/auth")
             .service(web::resource("/register").route(web::post().to(auth::register_user)))
             .service(web::resource("/login").route(web::post().to(auth::login_user)))
@@ -60,10 +60,12 @@ impl ActixPassport {
     /// Configures OAuth authentication routes.
     ///
     /// Adds routes for OAuth-based authentication including provider initiation and callback handling.
-    fn configure_oauth_routes(&self, cfg: &mut web::ServiceConfig) {
+    fn configure_oauth_routes(cfg: &mut web::ServiceConfig) {
         let auth_scope = web::scope("/auth")
             .service(web::resource("/{provider}").route(web::get().to(oauth::oauth_initiate)))
-            .service(web::resource("/{provider}/callback").route(web::get().to(oauth::oauth_callback)));
+            .service(
+                web::resource("/{provider}/callback").route(web::get().to(oauth::oauth_callback)),
+            );
 
         cfg.service(auth_scope);
     }

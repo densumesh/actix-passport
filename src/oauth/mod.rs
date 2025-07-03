@@ -36,7 +36,8 @@ pub struct OAuthConfig {
 
 impl OAuthConfig {
     /// Creates a new builder for `OAuthConfig`.
-    pub fn builder(client_id: String, client_secret: String) -> OAuthConfigBuilder {
+    #[must_use]
+    pub const fn builder(client_id: String, client_secret: String) -> OAuthConfigBuilder {
         OAuthConfigBuilder::new(client_id, client_secret)
     }
 }
@@ -53,7 +54,8 @@ pub struct OAuthConfigBuilder {
 
 impl OAuthConfigBuilder {
     /// Creates a new `OAuthConfigBuilder`.
-    pub fn new(client_id: String, client_secret: String) -> Self {
+    #[must_use]
+    pub const fn new(client_id: String, client_secret: String) -> Self {
         Self {
             client_id,
             client_secret,
@@ -101,9 +103,15 @@ impl OAuthConfigBuilder {
         Ok(OAuthConfig {
             client_id: self.client_id,
             client_secret: self.client_secret,
-            auth_url: self.auth_url.ok_or_else(|| crate::errors::AuthError::Internal("auth_url is required".to_string()))?,
-            token_url: self.token_url.ok_or_else(|| crate::errors::AuthError::Internal("token_url is required".to_string()))?,
-            user_info_url: self.user_info_url.ok_or_else(|| crate::errors::AuthError::Internal("user_info_url is required".to_string()))?,
+            auth_url: self.auth_url.ok_or_else(|| {
+                crate::errors::AuthError::Internal("auth_url is required".to_string())
+            })?,
+            token_url: self.token_url.ok_or_else(|| {
+                crate::errors::AuthError::Internal("token_url is required".to_string())
+            })?,
+            user_info_url: self.user_info_url.ok_or_else(|| {
+                crate::errors::AuthError::Internal("user_info_url is required".to_string())
+            })?,
             scopes: self.scopes,
         })
     }

@@ -104,20 +104,10 @@ dyn_clone::clone_trait_object!(UserStore);
 ///
 /// This struct contains all the configuration options for the authentication system,
 /// including session settings, JWT configuration, and security options.
-#[derive(Debug, Clone)]
-#[allow(clippy::struct_excessive_bools)]
+#[derive(Debug, Clone, Default)]
 pub(crate) struct AuthConfig {
     /// Whether password authentication is enabled
     pub(crate) password_auth: bool,
     /// Whether OAuth authentication is enabled
     pub(crate) oauth_auth: bool,
-}
-
-impl Default for AuthConfig {
-    fn default() -> Self {
-        Self {
-            password_auth: false,
-            oauth_auth: false,
-        }
-    }
 }

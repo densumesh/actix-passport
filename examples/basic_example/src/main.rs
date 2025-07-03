@@ -1,6 +1,6 @@
+use actix_files::Files;
 use actix_passport::{
     core::UserStore,
-    routes,
     types::{AuthResult, AuthUser},
     ActixPassportBuilder, AuthedUser,
 };
@@ -78,12 +78,16 @@ async fn main() -> std::io::Result<()> {
         App::new()
             // IMPORTANT: Session middleware is now the single source of truth for session state.
             // You can swap this with `RedisSessionStore` or another backend.
-            .wrap(SessionMiddleware::new(
-                CookieSessionStore::default(),
-                Key::from(&[0; 64]), // In production, use a secure, persistent key
-            ))
+            .wrap(
+                SessionMiddleware::builder(
+                    CookieSessionStore::default(),
+                    Key::from(&[0; 64]), // In production, use a secure, persistent key
+                )
+                .cookie_secure(false)
+                .build(), // For local HTTP testing
+            )
             .configure(|cfg| auth_framework.configure_routes(cfg))
-            .route("/", web::get().to(hello_world))
+            .service(Files::new("/", "static").index_file("index.html"))
     })
     .bind("127.0.0.1:8080")?
     .run()
