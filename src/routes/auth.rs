@@ -10,7 +10,7 @@ const USER_ID_KEY: &str = "actix_passport_user_id";
 
 /// Handles user registration.
 ///
-/// **POST /auth/register**
+/// `POST /auth/register`
 pub async fn register_user(
     credentials: web::Json<RegisterCredentials>,
     framework: web::Data<ActixPassport>,
@@ -27,7 +27,7 @@ pub async fn register_user(
 
 /// Handles user login.
 ///
-/// **POST /auth/login**
+/// `POST /auth/login`
 pub async fn login_user(
     credentials: web::Json<LoginCredentials>,
     framework: web::Data<ActixPassport>,
@@ -52,7 +52,7 @@ where
 
 /// Handles user logout.
 ///
-/// **POST /auth/logout**
+/// `POST /auth/logout`
 pub async fn logout_user(session: Session) -> impl Responder {
     session.remove(USER_ID_KEY);
     session.purge();
@@ -61,7 +61,7 @@ pub async fn logout_user(session: Session) -> impl Responder {
 
 /// Gets the current authenticated user's profile.
 ///
-/// **GET /auth/me**
+/// `GET /auth/me`
 pub async fn get_me(user: AuthedUser) -> impl Responder {
     HttpResponse::Ok().json(user.0)
 }

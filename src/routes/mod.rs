@@ -30,17 +30,19 @@ impl ActixPassport {
     /// * `cfg` - The service config to add the routes to.
     pub fn configure_routes(&self, cfg: &mut web::ServiceConfig) {
         cfg.app_data(web::Data::new(self.clone()));
-        cfg.service(web::resource("/auth/me").route(web::get().to(auth::get_me)));
+        let mut auth_scope = web::scope("/auth");
+        auth_scope = auth_scope.service(web::resource("/me").route(web::get().to(auth::get_me)));
 
         #[cfg(feature = "password")]
         if self.config.password_auth {
-            Self::configure_password_routes(cfg);
+            auth_scope = Self::configure_password_routes(auth_scope);
         }
 
         #[cfg(feature = "oauth")]
         if self.config.oauth_auth {
-            Self::configure_oauth_routes(cfg);
+            auth_scope = Self::configure_oauth_routes(auth_scope);
         }
+        cfg.service(auth_scope);
     }
 }
 
@@ -48,25 +50,21 @@ impl ActixPassport {
     /// Configures password authentication routes.
     ///
     /// Adds routes for password-based authentication including registration, login, and logout.
-    fn configure_password_routes(cfg: &mut web::ServiceConfig) {
-        let auth_scope = web::scope("/auth")
+    fn configure_password_routes(auth_scope: actix_web::Scope) -> actix_web::Scope {
+        auth_scope
             .service(web::resource("/register").route(web::post().to(auth::register_user)))
             .service(web::resource("/login").route(web::post().to(auth::login_user)))
-            .service(web::resource("/logout").route(web::post().to(auth::logout_user)));
-
-        cfg.service(auth_scope);
+            .service(web::resource("/logout").route(web::post().to(auth::logout_user)))
     }
 
     /// Configures OAuth authentication routes.
     ///
     /// Adds routes for OAuth-based authentication including provider initiation and callback handling.
-    fn configure_oauth_routes(cfg: &mut web::ServiceConfig) {
-        let auth_scope = web::scope("/auth")
+    fn configure_oauth_routes(auth_scope: actix_web::Scope) -> actix_web::Scope {
+        auth_scope
             .service(web::resource("/{provider}").route(web::get().to(oauth::oauth_initiate)))
             .service(
                 web::resource("/{provider}/callback").route(web::get().to(oauth::oauth_callback)),
-            );
-
-        cfg.service(auth_scope);
+            )
     }
 }

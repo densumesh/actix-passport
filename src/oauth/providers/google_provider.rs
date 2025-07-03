@@ -10,6 +10,8 @@ use async_trait::async_trait;
 /// This is a specialized OAuth provider for Google authentication.
 /// It handles Google-specific OAuth flow and user data extraction.
 ///
+/// Ensure that you have allowed `<domain>/auth/google/callback` as an authorized redirect URI
+///
 /// # Examples
 ///
 /// ```rust

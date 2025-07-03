@@ -87,6 +87,7 @@ async fn main() -> std::io::Result<()> {
                 .build(), // For local HTTP testing
             )
             .configure(|cfg| auth_framework.configure_routes(cfg))
+            .route("/hello", web::get().to(hello_world))
             .service(Files::new("/", "static").index_file("index.html"))
     })
     .bind("127.0.0.1:8080")?
