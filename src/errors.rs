@@ -353,9 +353,10 @@ impl AuthError {
         let value = value.into();
         Self::RegistrationFailed {
             reason: format!("{field_name} already exists: {value}"),
-            field_errors: std::collections::HashMap::from([
-                (field_name.clone(), vec![format!("This {field_name} is already taken")]),
-            ]),
+            field_errors: std::collections::HashMap::from([(
+                field_name.clone(),
+                vec![format!("This {field_name} is already taken")],
+            )]),
         }
     }
 

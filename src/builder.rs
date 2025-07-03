@@ -36,11 +36,9 @@ use std::sync::Arc;
 /// #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
 /// # }
 ///
-/// let auth_framework = ActixPassportBuilder::new()
-///     .with_user_store(MyUserStore)
+/// let auth_framework = ActixPassportBuilder::new(MyUserStore)
 ///     .enable_password_auth()
-///     .build()
-///     .expect("Failed to build framework");
+///     .build();
 /// ```
 #[derive(Clone)]
 pub struct ActixPassport {
@@ -81,14 +79,13 @@ pub struct ActixPassport {
 /// # #[cfg(feature = "oauth")]
 /// # use actix_passport::GoogleOAuthProvider;
 ///
-/// let builder = ActixPassportBuilder::new()
-///     .with_user_store(MyUserStore)
+/// let builder = ActixPassportBuilder::new(MyUserStore)
 ///     .enable_password_auth();  // Enables Argon2-based password authentication
 ///
 /// # #[cfg(feature = "oauth")]
 /// # let builder = builder.with_oauth(GoogleOAuthProvider::new("client_id".to_string(), "client_secret".to_string()));
 ///
-/// let framework = builder.build().expect("Failed to build framework");
+/// let framework = builder.build();
 /// ```
 pub struct ActixPassportBuilder<U>
 where
@@ -151,11 +148,9 @@ where
     /// #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
     /// # }
     ///
-    /// let framework = ActixPassportBuilder::new()
-    ///     .with_user_store(MyUserStore)
+    /// let framework = ActixPassportBuilder::new(MyUserStore)
     ///     .enable_password_auth()  // Enables password auth with Argon2
-    ///     .build()
-    ///     .expect("Failed to build framework");
+    ///     .build();
     /// ```
     #[must_use]
     pub const fn enable_password_auth(mut self) -> Self {
@@ -196,11 +191,9 @@ where
     /// #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
     /// # }
     ///
-    /// let framework = ActixPassportBuilder::new()
-    ///     .with_user_store(MyUserStore)
+    /// let framework = ActixPassportBuilder::new(MyUserStore)
     ///     .with_google_oauth("your_client_id".to_string(), "your_client_secret".to_string())
-    ///     .build()
-    ///     .expect("Failed to build framework");
+    ///     .build();
     /// ```
     #[cfg(feature = "oauth")]
     #[must_use]
@@ -236,11 +229,9 @@ where
     /// #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
     /// # }
     ///
-    /// let framework = ActixPassportBuilder::new()
-    ///     .with_user_store(MyUserStore)
+    /// let framework = ActixPassportBuilder::new(MyUserStore)
     ///     .with_github_oauth("your_client_id".to_string(), "your_client_secret".to_string())
-    ///     .build()
-    ///     .expect("Failed to build framework");
+    ///     .build();
     /// ```
     #[cfg(feature = "oauth")]
     #[must_use]

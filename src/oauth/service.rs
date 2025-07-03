@@ -110,11 +110,11 @@ impl OAuthService {
         state: &str,
         redirect_uri: &str,
     ) -> AuthResult<String> {
-        let provider = self
-            .get_provider(provider_name)
-            .ok_or_else(|| AuthError::OAuthProviderNotConfigured {
+        let provider = self.get_provider(provider_name).ok_or_else(|| {
+            AuthError::OAuthProviderNotConfigured {
                 provider: provider_name.to_string(),
-            })?;
+            }
+        })?;
 
         provider.authorize_url(state, redirect_uri)
     }
@@ -140,11 +140,11 @@ impl OAuthService {
         code: &str,
         redirect_uri: &str,
     ) -> AuthResult<OAuthUser> {
-        let provider = self
-            .get_provider(provider_name)
-            .ok_or_else(|| AuthError::OAuthProviderNotConfigured {
+        let provider = self.get_provider(provider_name).ok_or_else(|| {
+            AuthError::OAuthProviderNotConfigured {
                 provider: provider_name.to_string(),
-            })?;
+            }
+        })?;
 
         provider.exchange_code(code, redirect_uri).await
     }

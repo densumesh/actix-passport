@@ -26,11 +26,9 @@ use crate::{
 /// ```rust
 /// use actix_passport::{user_store::stores::in_memory::InMemoryUserStore, ActixPassportBuilder};
 ///
-/// let auth_framework = ActixPassportBuilder::new()
-///     .with_user_store(InMemoryUserStore::new())
+/// let auth_framework = ActixPassportBuilder::with_in_memory_store()
 ///     .enable_password_auth()
-///     .build()
-///     .expect("Failed to build framework");
+///     .build();
 /// ```
 ///
 /// Or use the convenience method:
@@ -40,8 +38,7 @@ use crate::{
 ///
 /// let auth_framework = ActixPassportBuilder::with_in_memory_store()
 ///     .enable_password_auth()
-///     .build()
-///     .expect("Failed to build framework");
+///     .build();
 /// ```
 #[derive(Clone)]
 pub struct InMemoryUserStore {

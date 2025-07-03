@@ -38,11 +38,9 @@
 //! #[actix_web::main]
 //! async fn main() -> std::io::Result<()> {
 //!     // Configure authentication framework
-//!     let auth_framework = ActixPassportBuilder::new()
-//!         .with_user_store(MyUserStore)
+//!     let auth_framework = ActixPassportBuilder::new(MyUserStore)
 //!         .enable_password_auth()  // Uses Argon2 hashing internally
-//!         .build()
-//!         .expect("Failed to build auth framework");
+//!         .build();
 //!
 //!     HttpServer::new(move || {
 //!         App::new()
