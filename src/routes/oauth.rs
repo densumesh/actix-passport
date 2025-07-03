@@ -118,10 +118,10 @@ pub async fn oauth_callback(
         // Verify CSRF state
         if let Ok(Some(saved_state)) = session.get::<String>("oauth_state") {
             if saved_state != params.state {
-                return HttpResponse::BadRequest().body("Invalid state");
+                return HttpResponse::BadRequest().json("Invalid OAuth state");
             }
         } else {
-            return HttpResponse::BadRequest().body("State not found");
+            return HttpResponse::BadRequest().json("Invalid OAuth state");
         }
 
         let redirect_uri = format!(

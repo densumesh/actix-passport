@@ -172,6 +172,139 @@ where
         self
     }
 
+    /// Adds Google OAuth authentication with the provided client credentials.
+    ///
+    /// This is a convenience method that creates and configures a Google OAuth
+    /// provider with the standard Google OAuth endpoints and scopes.
+    ///
+    /// # Arguments
+    ///
+    /// * `client_id` - Your Google OAuth client ID
+    /// * `client_secret` - Your Google OAuth client secret
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use actix_passport::ActixPassportBuilder;
+    /// # use actix_passport::{core::UserStore, types::{AuthResult, AuthUser}};
+    /// # use async_trait::async_trait;
+    /// # #[derive(Clone)] struct MyUserStore;
+    /// # #[async_trait] impl UserStore for MyUserStore {
+    /// #   async fn find_by_id(&self, id: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+    /// #   async fn find_by_email(&self, email: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+    /// #   async fn find_by_username(&self, username: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+    /// #   async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+    /// #   async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+    /// #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
+    /// # }
+    ///
+    /// let framework = ActixPassportBuilder::new()
+    ///     .with_user_store(MyUserStore)
+    ///     .with_google_oauth("your_client_id".to_string(), "your_client_secret".to_string())
+    ///     .build()
+    ///     .expect("Failed to build framework");
+    /// ```
+    #[cfg(feature = "oauth")]
+    #[must_use]
+    pub fn with_google_oauth(self, client_id: String, client_secret: String) -> Self {
+        use crate::GoogleOAuthProvider;
+        let provider = GoogleOAuthProvider::new(client_id, client_secret);
+        self.with_oauth(provider)
+    }
+
+    /// Adds GitHub OAuth authentication with the provided client credentials.
+    ///
+    /// This is a convenience method that creates and configures a GitHub OAuth
+    /// provider with the standard GitHub OAuth endpoints and scopes.
+    ///
+    /// # Arguments
+    ///
+    /// * `client_id` - Your GitHub OAuth client ID
+    /// * `client_secret` - Your GitHub OAuth client secret
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use actix_passport::ActixPassportBuilder;
+    /// # use actix_passport::{core::UserStore, types::{AuthResult, AuthUser}};
+    /// # use async_trait::async_trait;
+    /// # #[derive(Clone)] struct MyUserStore;
+    /// # #[async_trait] impl UserStore for MyUserStore {
+    /// #   async fn find_by_id(&self, id: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+    /// #   async fn find_by_email(&self, email: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+    /// #   async fn find_by_username(&self, username: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+    /// #   async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+    /// #   async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+    /// #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
+    /// # }
+    ///
+    /// let framework = ActixPassportBuilder::new()
+    ///     .with_user_store(MyUserStore)
+    ///     .with_github_oauth("your_client_id".to_string(), "your_client_secret".to_string())
+    ///     .build()
+    ///     .expect("Failed to build framework");
+    /// ```
+    #[cfg(feature = "oauth")]
+    #[must_use]
+    pub fn with_github_oauth(self, client_id: String, client_secret: String) -> Self {
+        use crate::GitHubOAuthProvider;
+        let provider = GitHubOAuthProvider::new(client_id, client_secret);
+        self.with_oauth(provider)
+    }
+
+    /// Configures OAuth providers from environment variables.
+    ///
+    /// This convenience method automatically configures Google and GitHub OAuth
+    /// providers based on environment variables, if they are present.
+    ///
+    /// Expected environment variables:
+    /// - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` for Google OAuth
+    /// - `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` for GitHub OAuth
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use actix_passport::ActixPassportBuilder;
+    /// # use actix_passport::{core::UserStore, types::{AuthResult, AuthUser}};
+    /// # use async_trait::async_trait;
+    /// # #[derive(Clone)] struct MyUserStore;
+    /// # #[async_trait] impl UserStore for MyUserStore {
+    /// #   async fn find_by_id(&self, id: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+    /// #   async fn find_by_email(&self, email: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+    /// #   async fn find_by_username(&self, username: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+    /// #   async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+    /// #   async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+    /// #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
+    /// # }
+    ///
+    /// let framework = ActixPassportBuilder::new()
+    ///     .with_user_store(MyUserStore)
+    ///     .with_oauth_from_env()
+    ///     .build()
+    ///     .expect("Failed to build framework");
+    /// ```
+    #[cfg(feature = "oauth")]
+    #[must_use]
+    pub fn with_oauth_from_env(mut self) -> Self {
+        // Try to configure Google OAuth from environment
+        if let (Ok(google_client_id), Ok(google_client_secret)) = (
+            std::env::var("GOOGLE_CLIENT_ID"),
+            std::env::var("GOOGLE_CLIENT_SECRET"),
+        ) {
+            self = self.with_google_oauth(google_client_id, google_client_secret);
+        }
+
+        // Try to configure GitHub OAuth from environment
+        if let (Ok(github_client_id), Ok(github_client_secret)) = (
+            std::env::var("GITHUB_CLIENT_ID"),
+            std::env::var("GITHUB_CLIENT_SECRET"),
+        ) {
+            self = self.with_github_oauth(github_client_id, github_client_secret);
+        }
+
+        self
+    }
+
     
 
     /// Builds the `ActixPassport`.
@@ -186,7 +319,10 @@ where
     pub fn build(self) -> Result<ActixPassport, Box<dyn std::error::Error>> {
         let user_store = self
             .user_store
-            .ok_or_else(|| AuthError::Internal("A UserStore is required.".to_string()))?;
+            .ok_or_else(|| AuthError::ConfigurationError {
+                message: "A UserStore is required".to_string(),
+                suggestions: vec!["Call .with_user_store() on the builder".to_string()],
+            })?;
 
         let password_service = if self.enable_password_auth {
             Some(PasswordAuthService::new(Box::new(user_store.clone())))

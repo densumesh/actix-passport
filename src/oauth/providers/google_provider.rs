@@ -4,6 +4,7 @@ use crate::{
     types::AuthResult,
 };
 use async_trait::async_trait;
+use std::env;
 
 /// Google OAuth provider implementation.
 ///
@@ -52,6 +53,14 @@ impl GoogleOAuthProvider {
         Self {
             inner: GenericOAuthProvider::new("google", config),
         }
+    }
+
+    /// Creates a new Google OAuth provider from environment variables.
+    /// Expects `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to be set.
+    #[must_use] pub fn from_env() -> Self {
+        let client_id = env::var("GOOGLE_CLIENT_ID").unwrap_or_default();
+        let client_secret = env::var("GOOGLE_CLIENT_SECRET").unwrap_or_default();
+        Self::new(client_id, client_secret)
     }
 }
 

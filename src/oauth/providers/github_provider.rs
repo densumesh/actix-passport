@@ -4,6 +4,7 @@ use crate::{
     types::AuthResult,
 };
 use async_trait::async_trait;
+use std::env;
 
 /// GitHub OAuth provider implementation.
 ///
@@ -48,6 +49,14 @@ impl GitHubOAuthProvider {
         Self {
             inner: GenericOAuthProvider::new("github", config),
         }
+    }
+
+    /// Creates a new GitHub OAuth provider from environment variables.
+    /// Expects `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` to be set.
+    #[must_use] pub fn from_env() -> Self {
+        let client_id = env::var("GITHUB_CLIENT_ID").unwrap_or_default();
+        let client_secret = env::var("GITHUB_CLIENT_SECRET").unwrap_or_default();
+        Self::new(client_id, client_secret)
     }
 }
 

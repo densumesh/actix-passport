@@ -64,7 +64,7 @@ impl OAuthProvider for GenericOAuthProvider {
 
     fn authorize_url(&self, state: &str, redirect_uri: &str) -> AuthResult<String> {
         let mut url = Url::parse(&self.config.auth_url)
-            .map_err(|e| AuthError::OAuth(format!("Invalid auth URL: {e}")))?;
+            .map_err(|e| AuthError::oauth_error(&self.name, format!("Invalid auth URL: {e}")))?;
 
         url.query_pairs_mut()
             .append_pair("client_id", &self.config.client_id)
@@ -93,19 +93,23 @@ impl OAuthProvider for GenericOAuthProvider {
             .form(&token_params)
             .send()
             .await
-            .map_err(|e| AuthError::OAuth(format!("Token request failed: {e}")))?;
+            .map_err(|e| {
+                AuthError::oauth_error(&self.name, format!("Token request failed: {e}"))
+            })?;
 
         if !token_response.status().is_success() {
-            return Err(AuthError::OAuth(format!(
-                "Token request failed with status: {}",
-                token_response.status()
-            )));
+            return Err(AuthError::oauth_error(
+                &self.name,
+                format!(
+                    "Token request failed with status: {}",
+                    token_response.status()
+                ),
+            ));
         }
 
-        let token_data: TokenResponse = token_response
-            .json()
-            .await
-            .map_err(|e| AuthError::OAuth(format!("Invalid token response: {e}")))?;
+        let token_data: TokenResponse = token_response.json().await.map_err(|e| {
+            AuthError::oauth_error(&self.name, format!("Invalid token response: {e}"))
+        })?;
 
         // Get user information using access token
         let user_response = self
@@ -115,20 +119,22 @@ impl OAuthProvider for GenericOAuthProvider {
             .header("User-Agent", "actix-passport")
             .send()
             .await
-            .map_err(|e| AuthError::OAuth(format!("User info request failed: {e}")))?;
+            .map_err(|e| {
+                AuthError::oauth_error(&self.name, format!("User info request failed: {e}"))
+            })?;
 
         if !user_response.status().is_success() {
             let status = user_response.status();
             let error_text = user_response.text().await.unwrap_or_default();
-            return Err(AuthError::OAuth(format!(
-                "User info request failed with status: {status}. Error: {error_text}"
-            )));
+            return Err(AuthError::oauth_error(
+                &self.name,
+                format!("User info request failed with status: {status}. Error: {error_text}"),
+            ));
         }
 
-        let user_data: serde_json::Value = user_response
-            .json()
-            .await
-            .map_err(|e| AuthError::OAuth(format!("Invalid user info response: {e}")))?;
+        let user_data: serde_json::Value = user_response.json().await.map_err(|e| {
+            AuthError::oauth_error(&self.name, format!("Invalid user info response: {e}"))
+        })?;
 
         // Extract common user fields (this is generic, specific providers should override)
         let oauth_user = OAuthUser {

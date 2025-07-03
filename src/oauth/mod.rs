@@ -104,13 +104,22 @@ impl OAuthConfigBuilder {
             client_id: self.client_id,
             client_secret: self.client_secret,
             auth_url: self.auth_url.ok_or_else(|| {
-                crate::errors::AuthError::Internal("auth_url is required".to_string())
+                crate::errors::AuthError::ConfigurationError {
+                    message: "auth_url is required".to_string(),
+                    suggestions: vec!["Call .auth_url() on the builder".to_string()],
+                }
             })?,
             token_url: self.token_url.ok_or_else(|| {
-                crate::errors::AuthError::Internal("token_url is required".to_string())
+                crate::errors::AuthError::ConfigurationError {
+                    message: "token_url is required".to_string(),
+                    suggestions: vec!["Call .token_url() on the builder".to_string()],
+                }
             })?,
             user_info_url: self.user_info_url.ok_or_else(|| {
-                crate::errors::AuthError::Internal("user_info_url is required".to_string())
+                crate::errors::AuthError::ConfigurationError {
+                    message: "user_info_url is required".to_string(),
+                    suggestions: vec!["Call .user_info_url() on the builder".to_string()],
+                }
             })?,
             scopes: self.scopes,
         })

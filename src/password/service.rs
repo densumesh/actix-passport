@@ -62,7 +62,11 @@ impl PasswordAuthService {
 
         let password_hash = argon2
             .hash_password(password.as_bytes(), &salt)
-            .map_err(|e| AuthError::Internal(format!("Password hashing failed: {e}")))?;
+            .map_err(|e| AuthError::Internal {
+                component: "password_service".to_string(),
+                message: format!("Password hashing failed: {e}"),
+                context: None,
+            })?;
 
         Ok(password_hash.to_string())
     }
@@ -70,7 +74,11 @@ impl PasswordAuthService {
     /// Verifies a password against its hash using Argon2.
     fn verify_password(password: &str, hash: &str) -> AuthResult<bool> {
         let parsed_hash = PasswordHash::new(hash)
-            .map_err(|e| AuthError::Internal(format!("Invalid password hash: {e}")))?;
+            .map_err(|e| AuthError::Internal {
+                component: "password_service".to_string(),
+                message: format!("Invalid password hash: {e}"),
+                context: None,
+            })?;
 
         let argon2 = Argon2::default();
 
@@ -106,19 +114,19 @@ impl PasswordAuthService {
                 .await?
         };
 
-        let user = user.ok_or(AuthError::UserNotFound)?;
+        let user = user.ok_or_else(|| AuthError::user_not_found("identifier", &credentials.identifier))?;
 
         // For this example, we assume password hash is stored in metadata
         let stored_hash = user
             .metadata
             .get("password_hash")
             .and_then(|v| v.as_str())
-            .ok_or(AuthError::InvalidCredentials)?;
+            .ok_or_else(|| AuthError::invalid_credentials(&credentials.identifier))?;
 
         let is_valid = Self::verify_password(&credentials.password, stored_hash)?;
 
         if !is_valid {
-            return Err(AuthError::InvalidCredentials);
+            return Err(AuthError::invalid_credentials(&credentials.identifier));
         }
 
         Ok(user)
@@ -141,13 +149,23 @@ impl PasswordAuthService {
     pub async fn register(&self, credentials: RegisterCredentials) -> AuthResult<AuthUser> {
         // Check if email already exists
         if (self.user_store.find_by_email(&credentials.email).await?).is_some() {
-            return Err(AuthError::Internal("Email already exists".to_string()));
+            return Err(AuthError::RegistrationFailed {
+                reason: "Email already exists".to_string(),
+                field_errors: std::collections::HashMap::from([
+                    ("email".to_string(), vec!["Email is already taken".to_string()])
+                ]),
+            });
         }
 
         // Check if username already exists (if provided)
         if let Some(ref username) = credentials.username {
             if (self.user_store.find_by_username(username).await?).is_some() {
-                return Err(AuthError::Internal("Username already exists".to_string()));
+                return Err(AuthError::RegistrationFailed {
+                    reason: "Username already exists".to_string(),
+                    field_errors: std::collections::HashMap::from([
+                        ("username".to_string(), vec!["Username is already taken".to_string()])
+                    ]),
+                });
             }
         }
 
@@ -204,19 +222,19 @@ impl PasswordAuthService {
             .user_store
             .find_by_id(user_id)
             .await?
-            .ok_or(AuthError::UserNotFound)?;
+            .ok_or_else(|| AuthError::user_not_found("id", user_id))?;
 
         // Verify old password
         let stored_hash = user
             .metadata
             .get("password_hash")
             .and_then(|v| v.as_str())
-            .ok_or(AuthError::InvalidCredentials)?;
+            .ok_or_else(|| AuthError::invalid_credentials(user_id))?;
 
         let is_valid = Self::verify_password(old_password, stored_hash)?;
 
         if !is_valid {
-            return Err(AuthError::InvalidCredentials);
+            return Err(AuthError::invalid_credentials(user_id));
         }
 
         // Hash new password

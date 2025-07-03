@@ -1,9 +1,5 @@
 use actix_files::Files;
-use actix_passport::{
-    core::UserStore,
-    types::{AuthResult, AuthUser},
-    ActixPassportBuilder, AuthedUser,
-};
+use actix_passport::prelude::*;
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{cookie::Key, web, App, HttpResponse, HttpServer};
 use async_trait::async_trait;
