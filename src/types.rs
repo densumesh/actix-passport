@@ -123,6 +123,17 @@ impl AuthUser {
         self
     }
 
+    /// Sets the created at timestamp for the user.
+    ///
+    /// # Arguments
+    ///
+    /// * `created_at` - The timestamp when the user was created
+    #[must_use]
+    pub const fn with_created_at(mut self, created_at: DateTime<Utc>) -> Self {
+        self.created_at = created_at;
+        self
+    }
+
     /// Adds an OAuth provider to the user's metadata.
     ///
     /// This stores information about which OAuth providers the user has connected,
