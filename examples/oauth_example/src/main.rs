@@ -2,57 +2,6 @@ use actix_files::Files;
 use actix_passport::prelude::*;
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{cookie::Key, web, App, HttpResponse, HttpServer};
-use async_trait::async_trait;
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-
-// --- In-memory UserStore for demonstration --- //
-#[derive(Clone, Default)]
-struct InMemoryUserStore {
-    users: Arc<Mutex<HashMap<String, AuthUser>>>,
-}
-
-#[async_trait]
-impl UserStore for InMemoryUserStore {
-    async fn find_by_id(&self, id: &str) -> AuthResult<Option<AuthUser>> {
-        let users = self.users.lock().unwrap();
-        Ok(users.get(id).cloned())
-    }
-
-    async fn find_by_email(&self, email: &str) -> AuthResult<Option<AuthUser>> {
-        let users = self.users.lock().unwrap();
-        Ok(users
-            .values()
-            .find(|u| u.email.as_deref() == Some(email))
-            .cloned())
-    }
-
-    async fn find_by_username(&self, username: &str) -> AuthResult<Option<AuthUser>> {
-        let users = self.users.lock().unwrap();
-        Ok(users
-            .values()
-            .find(|u| u.username.as_deref() == Some(username))
-            .cloned())
-    }
-
-    async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> {
-        let mut users = self.users.lock().unwrap();
-        users.insert(user.id.clone(), user.clone());
-        Ok(user)
-    }
-
-    async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> {
-        let mut users = self.users.lock().unwrap();
-        users.insert(user.id.clone(), user.clone());
-        Ok(user)
-    }
-
-    async fn delete_user(&self, id: &str) -> AuthResult<()> {
-        let mut users = self.users.lock().unwrap();
-        users.remove(id);
-        Ok(())
-    }
-}
 
 async fn hello_world(user: AuthedUser) -> HttpResponse {
     HttpResponse::Ok().json(serde_json::json!({
@@ -76,14 +25,14 @@ async fn main() -> std::io::Result<()> {
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    // 1. Initialize the UserStore
-    let user_store = InMemoryUserStore::default();
+    let google_provider = GoogleOAuthProvider::from_env();
+    let github_provider = GitHubOAuthProvider::from_env();
 
-    // 2. Use the builder to construct the framework with OAuth providers
-    let auth_framework = ActixPassportBuilder::new()
-        .with_user_store(user_store)
+    // Create the authentication framework with in-memory store and OAuth providers
+    let auth_framework = ActixPassportBuilder::with_in_memory_store()
         .enable_password_auth()
-        .with_oauth_from_env() // Automatically configures OAuth from environment variables
+        .with_oauth(google_provider)
+        .with_oauth(github_provider)
         .build()
         .expect("Failed to build auth framework");
 

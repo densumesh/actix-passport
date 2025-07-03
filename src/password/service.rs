@@ -1,7 +1,7 @@
 use crate::{
-    core::UserStore,
     errors::AuthError,
     password::{LoginCredentials, RegisterCredentials},
+    prelude::UserStore,
     types::{AuthResult, AuthUser},
 };
 
@@ -21,7 +21,7 @@ use serde_json;
 /// # Examples
 ///
 /// ```rust
-/// use actix_passport::{PasswordAuthService, UserStore, AuthUser, AuthResult};
+/// use actix_passport::{PasswordAuthService, user_store::UserStore, AuthUser, AuthResult};
 /// use async_trait::async_trait;
 ///
 /// #[derive(Clone)]
@@ -73,12 +73,11 @@ impl PasswordAuthService {
 
     /// Verifies a password against its hash using Argon2.
     fn verify_password(password: &str, hash: &str) -> AuthResult<bool> {
-        let parsed_hash = PasswordHash::new(hash)
-            .map_err(|e| AuthError::Internal {
-                component: "password_service".to_string(),
-                message: format!("Invalid password hash: {e}"),
-                context: None,
-            })?;
+        let parsed_hash = PasswordHash::new(hash).map_err(|e| AuthError::Internal {
+            component: "password_service".to_string(),
+            message: format!("Invalid password hash: {e}"),
+            context: None,
+        })?;
 
         let argon2 = Argon2::default();
 
@@ -114,7 +113,8 @@ impl PasswordAuthService {
                 .await?
         };
 
-        let user = user.ok_or_else(|| AuthError::user_not_found("identifier", &credentials.identifier))?;
+        let user =
+            user.ok_or_else(|| AuthError::user_not_found("identifier", &credentials.identifier))?;
 
         // For this example, we assume password hash is stored in metadata
         let stored_hash = user
@@ -151,9 +151,10 @@ impl PasswordAuthService {
         if (self.user_store.find_by_email(&credentials.email).await?).is_some() {
             return Err(AuthError::RegistrationFailed {
                 reason: "Email already exists".to_string(),
-                field_errors: std::collections::HashMap::from([
-                    ("email".to_string(), vec!["Email is already taken".to_string()])
-                ]),
+                field_errors: std::collections::HashMap::from([(
+                    "email".to_string(),
+                    vec!["Email is already taken".to_string()],
+                )]),
             });
         }
 
@@ -162,9 +163,10 @@ impl PasswordAuthService {
             if (self.user_store.find_by_username(username).await?).is_some() {
                 return Err(AuthError::RegistrationFailed {
                     reason: "Username already exists".to_string(),
-                    field_errors: std::collections::HashMap::from([
-                        ("username".to_string(), vec!["Username is already taken".to_string()])
-                    ]),
+                    field_errors: std::collections::HashMap::from([(
+                        "username".to_string(),
+                        vec!["Username is already taken".to_string()],
+                    )]),
                 });
             }
         }

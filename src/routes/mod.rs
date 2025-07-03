@@ -15,15 +15,18 @@ impl ActixPassport {
     /// Configures the authentication routes for the application.
     ///
     /// This function adds the following routes to the specified service config:
+    ///
+    /// ## Password Authentication
     /// - `POST /auth/register`
     /// - `POST /auth/login`
     /// - `POST /auth/logout`
-    /// - `GET /auth/me`
+    ///
+    /// ## OAuth Authentication
     /// - `GET /auth/{provider}`
     /// - `GET /auth/{provider}/callback`
-    /// - `POST /auth/jwt-token` (if JWT feature enabled)
-    /// - `POST /auth/jwt-refresh` (if JWT feature enabled)
-    /// - `GET /auth/jwt-validate` (if JWT feature enabled)
+    ///
+    /// ## User Information
+    /// - `GET /auth/me`
     ///
     /// # Arguments
     ///

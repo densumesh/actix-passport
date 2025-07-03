@@ -12,7 +12,7 @@
 //! ## Quick Start
 //!
 //! ```rust,no_run
-//! use actix_passport::{ActixPassportBuilder, core::UserStore, types::{AuthResult, AuthUser}};
+//! use actix_passport::{ActixPassportBuilder, user_store::UserStore, types::{AuthResult, AuthUser}};
 //! use actix_web::{web, App, HttpServer};
 //! use actix_session::SessionMiddleware;
 //! use async_trait::async_trait;
@@ -70,20 +70,21 @@
 //! The framework is built around these core components:
 //!
 //! - [`ActixPassport`] - Main framework object containing all services
-//! - [`core::UserStore`] - Trait for user persistence (implement for your database)
-//! - [`password::PasswordAuthService`] - Service for password-based authentication using Argon2
+//! - [`user_store::UserStore`] - Trait for user persistence (implement for your database)
+//! - [`password::service::PasswordAuthService`] - Service for password-based authentication using Argon2
 //! - [`oauth::OAuthProvider`] - Trait for OAuth 2.0 providers
 //! - Authentication middleware for session and JWT-based auth
 
 pub mod builder;
-/// Core authentication types and traits.
-pub mod core;
+
 /// Authentication error types.
 pub mod errors;
 pub mod middleware;
 pub mod routes;
 /// Core type definitions for authentication.
 pub mod types;
+/// User store trait and implementations.
+pub mod user_store;
 
 #[cfg(feature = "password")]
 pub mod password;
@@ -100,13 +101,12 @@ pub mod oauth;
 ///
 /// ```rust,no_run
 /// use actix_passport::prelude::*;
-/// 
+///
 /// // All commonly used types are now available
 /// ```
 pub mod prelude;
 
 pub use crate::builder::{ActixPassport, ActixPassportBuilder};
-pub use crate::core::*;
 pub use crate::middleware::*;
 pub use crate::types::*;
 

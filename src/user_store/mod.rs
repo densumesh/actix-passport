@@ -1,12 +1,9 @@
-//! Core authentication types and traits for actix-passport.
-//!
-//! This module provides the fundamental building blocks for the authentication system,
-//! including user representation, and error handling.
-
+use crate::types::{AuthResult, AuthUser};
 use async_trait::async_trait;
 use dyn_clone::DynClone;
 
-use crate::types::{AuthResult, AuthUser};
+/// User store implementations.
+pub mod stores;
 
 /// Trait for storing and retrieving user data.
 ///
@@ -16,7 +13,7 @@ use crate::types::{AuthResult, AuthUser};
 /// # Examples
 ///
 /// ```rust
-/// use actix_passport::{UserStore, AuthUser, AuthResult};
+/// use actix_passport::{user_store::UserStore, AuthUser, AuthResult};
 /// use async_trait::async_trait;
 ///
 /// #[derive(Clone)]
@@ -99,15 +96,3 @@ pub trait UserStore: Send + Sync + DynClone {
 }
 
 dyn_clone::clone_trait_object!(UserStore);
-
-/// Configuration for the authentication system.
-///
-/// This struct contains all the configuration options for the authentication system,
-/// including session settings, JWT configuration, and security options.
-#[derive(Debug, Clone, Default)]
-pub(crate) struct AuthConfig {
-    /// Whether password authentication is enabled
-    pub(crate) password_auth: bool,
-    /// Whether OAuth authentication is enabled
-    pub(crate) oauth_auth: bool,
-}

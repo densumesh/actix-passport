@@ -1,10 +1,12 @@
 //! Builder for constructing the main authentication framework.
 
 use crate::{
-    core::{AuthConfig, UserStore},
     errors::AuthError,
     oauth::{service::OAuthService, OAuthProvider},
     password::service::PasswordAuthService,
+    prelude::UserStore,
+    types::AuthConfig,
+    user_store::stores::in_memory::InMemoryUserStore,
 };
 use std::sync::Arc;
 
@@ -21,7 +23,7 @@ use std::sync::Arc;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use actix_passport::{ActixPassportBuilder, core::UserStore};
+/// use actix_passport::{ActixPassportBuilder, user_store::UserStore};
 /// # use actix_passport::types::{AuthResult, AuthUser};
 /// # use async_trait::async_trait;
 /// # #[derive(Clone)] struct MyUserStore;
@@ -65,7 +67,7 @@ pub struct ActixPassport {
 /// # Examples
 ///
 /// ```rust,no_run
-/// use actix_passport::{ActixPassportBuilder, core::UserStore};
+/// use actix_passport::{ActixPassportBuilder, user_store::UserStore};
 /// # use actix_passport::types::{AuthResult, AuthUser};
 /// # use async_trait::async_trait;
 /// # #[derive(Clone)] struct MyUserStore;
@@ -113,6 +115,19 @@ where
     }
 }
 
+impl ActixPassportBuilder<InMemoryUserStore> {
+    /// Creates a new builder with an in-memory user store.
+    #[must_use]
+    pub fn with_in_memory_store() -> Self {
+        Self {
+            user_store: Some(InMemoryUserStore::default()),
+            enable_password_auth: false,
+            oauth_providers: Vec::new(),
+            config: AuthConfig::default(),
+        }
+    }
+}
+
 impl<U> ActixPassportBuilder<U>
 where
     U: UserStore + Clone,
@@ -141,7 +156,7 @@ where
     ///
     /// ```rust,no_run
     /// use actix_passport::ActixPassportBuilder;
-    /// # use actix_passport::{core::UserStore, types::{AuthResult, AuthUser}};
+    /// # use actix_passport::{user_store::UserStore, types::{AuthResult, AuthUser}};
     /// # use async_trait::async_trait;
     /// # #[derive(Clone)] struct MyUserStore;
     /// # #[async_trait] impl UserStore for MyUserStore {
@@ -186,7 +201,7 @@ where
     ///
     /// ```rust,no_run
     /// use actix_passport::ActixPassportBuilder;
-    /// # use actix_passport::{core::UserStore, types::{AuthResult, AuthUser}};
+    /// # use actix_passport::{user_store::UserStore, types::{AuthResult, AuthUser}};
     /// # use async_trait::async_trait;
     /// # #[derive(Clone)] struct MyUserStore;
     /// # #[async_trait] impl UserStore for MyUserStore {
@@ -226,7 +241,7 @@ where
     ///
     /// ```rust,no_run
     /// use actix_passport::ActixPassportBuilder;
-    /// # use actix_passport::{core::UserStore, types::{AuthResult, AuthUser}};
+    /// # use actix_passport::{user_store::UserStore, types::{AuthResult, AuthUser}};
     /// # use async_trait::async_trait;
     /// # #[derive(Clone)] struct MyUserStore;
     /// # #[async_trait] impl UserStore for MyUserStore {
@@ -251,61 +266,6 @@ where
         let provider = GitHubOAuthProvider::new(client_id, client_secret);
         self.with_oauth(provider)
     }
-
-    /// Configures OAuth providers from environment variables.
-    ///
-    /// This convenience method automatically configures Google and GitHub OAuth
-    /// providers based on environment variables, if they are present.
-    ///
-    /// Expected environment variables:
-    /// - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` for Google OAuth
-    /// - `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` for GitHub OAuth
-    ///
-    /// # Examples
-    ///
-    /// ```rust,no_run
-    /// use actix_passport::ActixPassportBuilder;
-    /// # use actix_passport::{core::UserStore, types::{AuthResult, AuthUser}};
-    /// # use async_trait::async_trait;
-    /// # #[derive(Clone)] struct MyUserStore;
-    /// # #[async_trait] impl UserStore for MyUserStore {
-    /// #   async fn find_by_id(&self, id: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
-    /// #   async fn find_by_email(&self, email: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
-    /// #   async fn find_by_username(&self, username: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
-    /// #   async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
-    /// #   async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
-    /// #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
-    /// # }
-    ///
-    /// let framework = ActixPassportBuilder::new()
-    ///     .with_user_store(MyUserStore)
-    ///     .with_oauth_from_env()
-    ///     .build()
-    ///     .expect("Failed to build framework");
-    /// ```
-    #[cfg(feature = "oauth")]
-    #[must_use]
-    pub fn with_oauth_from_env(mut self) -> Self {
-        // Try to configure Google OAuth from environment
-        if let (Ok(google_client_id), Ok(google_client_secret)) = (
-            std::env::var("GOOGLE_CLIENT_ID"),
-            std::env::var("GOOGLE_CLIENT_SECRET"),
-        ) {
-            self = self.with_google_oauth(google_client_id, google_client_secret);
-        }
-
-        // Try to configure GitHub OAuth from environment
-        if let (Ok(github_client_id), Ok(github_client_secret)) = (
-            std::env::var("GITHUB_CLIENT_ID"),
-            std::env::var("GITHUB_CLIENT_SECRET"),
-        ) {
-            self = self.with_github_oauth(github_client_id, github_client_secret);
-        }
-
-        self
-    }
-
-    
 
     /// Builds the `ActixPassport`.
     ///

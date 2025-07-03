@@ -1,4 +1,4 @@
-use crate::{core::UserStore, types::AuthUser};
+use crate::{prelude::UserStore, types::AuthUser};
 use actix_session::SessionExt;
 use actix_web::HttpRequest;
 

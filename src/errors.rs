@@ -347,6 +347,18 @@ impl AuthError {
         }
     }
 
+    /// Creates a user already exists error for a specific field.
+    pub fn user_already_exists(field: impl Into<String>, value: impl Into<String>) -> Self {
+        let field_name = field.into();
+        let value = value.into();
+        Self::RegistrationFailed {
+            reason: format!("{field_name} already exists: {value}"),
+            field_errors: std::collections::HashMap::from([
+                (field_name.clone(), vec![format!("This {field_name} is already taken")]),
+            ]),
+        }
+    }
+
     /// Creates a database error with operation context.
     pub fn database_error(
         operation: impl Into<String>,

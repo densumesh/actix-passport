@@ -16,8 +16,7 @@ use actix_web::{
     web::{self, Bytes},
     App, HttpResponse, Result,
 };
-mod common;
-use common::MockUserStore;
+
 use futures_util::Stream;
 use serde_json::json;
 
@@ -120,9 +119,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_registration_success() {
-        let user_store = MockUserStore::new();
-        let auth_framework = ActixPassportBuilder::new()
-            .with_user_store(user_store.clone())
+        let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .enable_password_auth()
             .build()
             .expect("Failed to build auth framework");
@@ -143,15 +140,14 @@ mod password_tests {
         let resp = actix_web::test::call_service(&app, req).await;
         assert!(resp.status().is_success(), "Rexistration should succeed");
 
-        // Verify user was created
-        assert_eq!(user_store.get_user_count(), 1, "One user should be created");
+        let body: serde_json::Value = actix_web::test::read_body_json(resp).await;
+        assert_eq!(body["email"], "test@example.com");
+        assert_eq!(body["username"], "testuser");
     }
 
     #[actix_web::test]
     async fn test_user_registration_duplicate_email() {
-        let user_store = MockUserStore::new();
-        let auth_framework = ActixPassportBuilder::new()
-            .with_user_store(user_store)
+        let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .enable_password_auth()
             .build()
             .expect("Failed to build auth framework");
@@ -172,9 +168,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_registration_duplicate_username() {
-        let user_store = MockUserStore::new();
-        let auth_framework = ActixPassportBuilder::new()
-            .with_user_store(user_store)
+        let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .enable_password_auth()
             .build()
             .expect("Failed to build auth framework");
@@ -195,9 +189,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_registration_weak_password() {
-        let user_store = MockUserStore::new();
-        let auth_framework = ActixPassportBuilder::new()
-            .with_user_store(user_store)
+        let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .enable_password_auth()
             .build()
             .expect("Failed to build auth framework");
@@ -212,9 +204,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_registration_invalid_email() {
-        let user_store = MockUserStore::new();
-        let auth_framework = ActixPassportBuilder::new()
-            .with_user_store(user_store)
+        let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .enable_password_auth()
             .build()
             .expect("Failed to build auth framework");
@@ -229,9 +219,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_login_with_email() {
-        let user_store = MockUserStore::new();
-        let auth_framework = ActixPassportBuilder::new()
-            .with_user_store(user_store)
+        let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .enable_password_auth()
             .build()
             .expect("Failed to build auth framework");
@@ -249,9 +237,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_login_with_username() {
-        let user_store = MockUserStore::new();
-        let auth_framework = ActixPassportBuilder::new()
-            .with_user_store(user_store)
+        let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .enable_password_auth()
             .build()
             .expect("Failed to build auth framework");
@@ -269,9 +255,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_login_wrong_password() {
-        let user_store = MockUserStore::new();
-        let auth_framework = ActixPassportBuilder::new()
-            .with_user_store(user_store)
+        let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .enable_password_auth()
             .build()
             .expect("Failed to build auth framework");
@@ -289,9 +273,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_login_nonexistent_user() {
-        let user_store = MockUserStore::new();
-        let auth_framework = ActixPassportBuilder::new()
-            .with_user_store(user_store)
+        let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .enable_password_auth()
             .build()
             .expect("Failed to build auth framework");
@@ -305,9 +287,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_logout() {
-        let user_store = MockUserStore::new();
-        let auth_framework = ActixPassportBuilder::new()
-            .with_user_store(user_store)
+        let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .enable_password_auth()
             .build()
             .expect("Failed to build auth framework");
@@ -356,9 +336,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_get_current_user() {
-        let user_store = MockUserStore::new();
-        let auth_framework = ActixPassportBuilder::new()
-            .with_user_store(user_store)
+        let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .enable_password_auth()
             .build()
             .expect("Failed to build auth framework");
@@ -393,9 +371,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_protected_route_with_authentication() {
-        let user_store = MockUserStore::new();
-        let auth_framework = ActixPassportBuilder::new()
-            .with_user_store(user_store)
+        let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .enable_password_auth()
             .build()
             .expect("Failed to build auth framework");
@@ -429,9 +405,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_protected_route_without_authentication() {
-        let user_store = MockUserStore::new();
-        let auth_framework = ActixPassportBuilder::new()
-            .with_user_store(user_store)
+        let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .enable_password_auth()
             .build()
             .expect("Failed to build auth framework");
@@ -452,9 +426,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_multiple_users_isolation() {
-        let user_store = MockUserStore::new();
-        let auth_framework = ActixPassportBuilder::new()
-            .with_user_store(user_store)
+        let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .enable_password_auth()
             .build()
             .expect("Failed to build auth framework");
@@ -500,9 +472,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_session_persistence_across_requests() {
-        let user_store = MockUserStore::new();
-        let auth_framework = ActixPassportBuilder::new()
-            .with_user_store(user_store)
+        let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .enable_password_auth()
             .build()
             .expect("Failed to build auth framework");
@@ -535,9 +505,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_password_case_sensitivity() {
-        let user_store = MockUserStore::new();
-        let auth_framework = ActixPassportBuilder::new()
-            .with_user_store(user_store)
+        let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .enable_password_auth()
             .build()
             .expect("Failed to build auth framework");
