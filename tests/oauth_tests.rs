@@ -92,8 +92,7 @@ mod oauth_tests {
 
         let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .with_oauth(google_provider)
-            .build()
-            .expect("Failed to build auth framework");
+            .build();
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -133,8 +132,7 @@ mod oauth_tests {
 
         let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .with_oauth(github_provider)
-            .build()
-            .expect("Failed to build auth framework");
+            .build();
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -167,8 +165,7 @@ mod oauth_tests {
 
         let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .with_oauth(google_provider)
-            .build()
-            .expect("Failed to build auth framework");
+            .build();
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -192,8 +189,7 @@ mod oauth_tests {
 
         let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .with_oauth(google_provider)
-            .build()
-            .expect("Failed to build auth framework");
+            .build();
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -216,8 +212,7 @@ mod oauth_tests {
 
         let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .with_oauth(google_provider)
-            .build()
-            .expect("Failed to build auth framework");
+            .build();
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -235,9 +230,7 @@ mod oauth_tests {
 
     #[actix_web::test]
     async fn test_oauth_nonexistent_provider() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .build()
-            .expect("Failed to build auth framework");
+        let auth_framework = ActixPassportBuilder::with_in_memory_store().build();
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -263,8 +256,7 @@ mod oauth_tests {
         let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .with_oauth(google_provider)
             .with_oauth(github_provider)
-            .build()
-            .expect("Failed to build auth framework");
+            .build();
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -292,8 +284,7 @@ mod oauth_tests {
 
         let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .with_oauth(google_provider)
-            .build()
-            .expect("Failed to build auth framework");
+            .build();
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -322,8 +313,7 @@ mod oauth_tests {
 
         let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .with_oauth(google_provider)
-            .build()
-            .expect("Failed to build auth framework");
+            .build();
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -357,8 +347,7 @@ mod oauth_tests {
 
         let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .with_oauth(custom_provider)
-            .build()
-            .expect("Failed to build auth framework");
+            .build();
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -387,8 +376,7 @@ mod oauth_tests {
 
         let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .with_oauth(google_provider)
-            .build()
-            .expect("Failed to build auth framework");
+            .build();
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -426,8 +414,7 @@ mod oauth_tests {
 
         let auth_framework = ActixPassportBuilder::with_in_memory_store()
             .with_oauth(google_provider)
-            .build()
-            .expect("Failed to build auth framework");
+            .build();
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 

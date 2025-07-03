@@ -61,11 +61,9 @@ async fn main() -> std::io::Result<()> {
     let user_store = InMemoryUserStore::default();
 
     // 2. Use the builder to construct the framework
-    let auth_framework = ActixPassportBuilder::new()
-        .with_user_store(user_store)
+    let auth_framework = ActixPassportBuilder::new(user_store)
         .enable_password_auth()
-        .build()
-        .expect("Failed to build auth framework");
+        .build();
 
     log::info!("Starting server at http://127.0.0.1:8080");
 

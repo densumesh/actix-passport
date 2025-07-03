@@ -1,7 +1,6 @@
 //! Builder for constructing the main authentication framework.
 
 use crate::{
-    errors::AuthError,
     oauth::{service::OAuthService, OAuthProvider},
     password::service::PasswordAuthService,
     prelude::UserStore,
@@ -95,24 +94,10 @@ pub struct ActixPassportBuilder<U>
 where
     U: UserStore + 'static,
 {
-    user_store: Option<U>,
+    user_store: U,
     enable_password_auth: bool,
     oauth_providers: Vec<Box<dyn OAuthProvider>>,
     config: AuthConfig,
-}
-
-impl<U> Default for ActixPassportBuilder<U>
-where
-    U: UserStore + 'static,
-{
-    fn default() -> Self {
-        Self {
-            user_store: None,
-            enable_password_auth: false,
-            oauth_providers: Vec::new(),
-            config: AuthConfig::default(),
-        }
-    }
 }
 
 impl ActixPassportBuilder<InMemoryUserStore> {
@@ -120,7 +105,7 @@ impl ActixPassportBuilder<InMemoryUserStore> {
     #[must_use]
     pub fn with_in_memory_store() -> Self {
         Self {
-            user_store: Some(InMemoryUserStore::default()),
+            user_store: InMemoryUserStore::default(),
             enable_password_auth: false,
             oauth_providers: Vec::new(),
             config: AuthConfig::default(),
@@ -134,15 +119,13 @@ where
 {
     /// Creates a new builder.
     #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Sets the user store.
-    #[must_use]
-    pub fn with_user_store(mut self, store: U) -> Self {
-        self.user_store = Some(store);
-        self
+    pub fn new(user_store: U) -> Self {
+        Self {
+            user_store,
+            enable_password_auth: false,
+            oauth_providers: Vec::new(),
+            config: AuthConfig::default(),
+        }
     }
 
     /// Enables password authentication using Argon2 hashing.
@@ -268,24 +251,9 @@ where
     }
 
     /// Builds the `ActixPassport`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `user_store` is not set.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if `user_store` is not set.
-    pub fn build(self) -> Result<ActixPassport, Box<dyn std::error::Error>> {
-        let user_store = self
-            .user_store
-            .ok_or_else(|| AuthError::ConfigurationError {
-                message: "A UserStore is required".to_string(),
-                suggestions: vec!["Call .with_user_store() on the builder".to_string()],
-            })?;
-
+    pub fn build(self) -> ActixPassport {
         let password_service = if self.enable_password_auth {
-            Some(PasswordAuthService::new(Box::new(user_store.clone())))
+            Some(PasswordAuthService::new(Box::new(self.user_store.clone())))
         } else {
             None
         };
@@ -310,11 +278,11 @@ where
             config.oauth_auth = true;
         }
 
-        Ok(ActixPassport {
-            user_store: Box::new(user_store),
+        ActixPassport {
+            user_store: Box::new(self.user_store),
             password_service,
             oauth_service,
             config: Arc::new(config),
-        })
+        }
     }
 }

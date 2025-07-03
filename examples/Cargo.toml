@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["basic_password_auth", "oauth_example"]
+members = ["basic_password_example", "basic_oauth_example"]
 
 [workspace.dependencies]
 actix-passport = { path = "../" }

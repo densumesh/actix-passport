@@ -33,8 +33,7 @@ async fn main() -> std::io::Result<()> {
         .enable_password_auth()
         .with_oauth(google_provider)
         .with_oauth(github_provider)
-        .build()
-        .expect("Failed to build auth framework");
+        .build();
 
     log::info!("Starting OAuth example server at http://127.0.0.1:8080");
 
