@@ -1,28 +1,27 @@
 # Actix Passport
 
-A full-featured, extensible authentication framework for [actix-web](https://actix.rs/) in Rust.
+A comprehensive, flexible authentication framework for [actix-web](https://actix.rs/) applications in Rust.
 
 ## Features
 
-- 🔐 **Multiple Authentication Methods**
+- **Multiple Authentication Methods**
   - Username/password authentication with secure Argon2 hashing
   - OAuth 2.0 support (Google, GitHub, and custom providers)
-  - JWT token authentication
   - Session-based authentication
 
-- 🏗️ **Flexible Architecture**
-  - Pluggable user and session stores (database-agnostic)
-  - Customizable password hashing algorithms
+- **Flexible Architecture**
+  - Pluggable user stores (database-agnostic)
   - Extensible OAuth provider system
   - Builder pattern for easy configuration
+  - Type-safe authentication extractors
 
-- 🚀 **Developer Friendly**
+- **Developer Friendly**
   - Minimal boilerplate with sensible defaults
-  - Type-safe extractors for authenticated users
   - Comprehensive documentation and examples
   - Feature flags for optional functionality
+  - Built-in authentication routes
 
-- 🛡️ **Security First**
+- **Security First**
   - CSRF protection for OAuth flows
   - Secure session management
   - Configurable CORS policies
@@ -45,23 +44,28 @@ tokio = { version = "1.0", features = ["full"] }
 ```rust
 use actix_passport::{
     ActixPassportBuilder, AuthedUser, OptionalAuthedUser,
-    core::UserStore, types::{AuthResult, AuthUser}, routes
+    user_store::UserStore, types::{AuthResult, AuthUser}
 };
 use actix_session::{SessionMiddleware, storage::CookieSessionStore};
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use async_trait::async_trait;
 
 // Implement your user store (use a real database in production)
-#[derive(Clone, Default)]
-struct InMemoryUserStore;
+#[derive(Clone)]
+struct MyUserStore;
 
 #[async_trait]
-impl UserStore for InMemoryUserStore {
+impl UserStore for MyUserStore {
     async fn find_by_id(&self, _id: &str) -> AuthResult<Option<AuthUser>> {
         // Your database implementation here
         Ok(None)
     }
     // ... implement other required methods
+    async fn find_by_email(&self, _email: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+    async fn find_by_username(&self, _username: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+    async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+    async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+    async fn delete_user(&self, _id: &str) -> AuthResult<()> { Ok(()) }
 }
 
 #[get("/")]
@@ -74,17 +78,15 @@ async fn home(user: OptionalAuthedUser) -> impl Responder {
 
 #[get("/dashboard")]
 async fn dashboard(user: AuthedUser) -> impl Responder {
-    HttpResponse::Ok().json(format!("Dashboard for user: {}", user.0.id))
+    HttpResponse::Ok().json(format!("Dashboard for user: {}", user.id))
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // Configure authentication framework
-    let auth_framework = ActixPassportBuilder::new()
-        .with_user_store(InMemoryUserStore::default())
-        .enable_password_auth()  // Uses Argon2 hashing internally
-        .build()
-        .expect("Failed to build auth framework");
+    let auth_framework = ActixPassportBuilder::new(MyUserStore)
+        .enable_password_auth()
+        .build();
 
     HttpServer::new(move || {
         App::new()
@@ -95,7 +97,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(auth_framework.clone()))
             .service(home)
             .service(dashboard)
-            .configure(routes::configure_routes::<InMemoryUserStore>)
+            .configure(|cfg| auth_framework.configure_routes(cfg))
     })
     .bind("127.0.0.1:8080")?
     .run()
@@ -119,7 +121,7 @@ Once configured, your app automatically gets these authentication endpoints:
 Implement the `UserStore` trait for your database:
 
 ```rust
-use actix_passport::{core::UserStore, types::{AuthUser, AuthResult}};
+use actix_passport::{user_store::UserStore, types::{AuthUser, AuthResult}};
 use async_trait::async_trait;
 
 pub struct DatabaseUserStore {
@@ -193,11 +195,8 @@ impl OAuthProvider for CustomOAuthProvider {
 
 See the [`examples/`](examples/) directory for complete working examples:
 
-- [`basic.rs`](examples/basic.rs) - Basic password authentication
-- [`oauth.rs`](examples/oauth.rs) - OAuth with Google and GitHub
-- [`database.rs`](examples/database.rs) - Using with a real database
-- [`jwt.rs`](examples/jwt.rs) - JWT token authentication
-- [`custom.rs`](examples/custom.rs) - Custom providers and stores
+- [`basic_example/`](examples/basic_example/) - Basic password authentication
+- [`oauth_example/`](examples/oauth_example/) - OAuth with Google and GitHub
 
 ## Feature Flags
 
@@ -205,13 +204,12 @@ Control which features to include:
 
 ```toml
 [dependencies]
-actix-passport = { version = "0.1", features = ["password", "oauth", "jwt"] }
+actix-passport = { version = "0.1", features = ["password", "oauth"] }
 ```
 
 Available features:
 - `password` (default) - Username/password authentication
 - `oauth` (default) - OAuth 2.0 providers
-- `jwt` (default) - JWT token support
 
 ## Architecture
 
@@ -222,37 +220,10 @@ Available features:
 - **`OAuthProvider`** - Interface for OAuth providers (Google, GitHub, custom)
 - **`ActixPassport`** - Main framework object containing all configured services
 
-### Middleware
-
-- **`SessionAuthMiddleware`** - Session-based authentication middleware
-- **`JwtAuthMiddleware`** - JWT token authentication middleware
-
 ### Extractors
-
 - **`AuthedUser`** - Requires authentication, returns user or 401
 - **`OptionalAuthedUser`** - Optional authentication, returns `Option<User>`
 
-## Configuration
-
-```rust
-use actix_passport::{ActixPassportBuilder, core::AuthConfig};
-use chrono::Duration;
-
-let auth_config = AuthConfig {
-    session_duration: Duration::days(30),
-    jwt_secret: Some("your-secret-key".to_string()),
-    allowed_origins: vec!["https://yourapp.com".to_string()],
-    require_email_verification: true,
-    password_reset_expiry: Duration::hours(1),
-};
-
-let auth_framework = ActixPassportBuilder::new()
-    .with_user_store(your_user_store)
-    .enable_password_auth()  // Uses Argon2 hashing
-    .with_config(auth_config)
-    .build()
-    .expect("Failed to build auth framework");
-```
 
 ## Testing
 
@@ -262,12 +233,12 @@ Run the test suite:
 cargo test
 ```
 
-Run the example server:
+Run the example servers:
 
 ```bash
-cargo run --example basic
-# or
-cargo run  # runs the main.rs example
+cd examples/basic_example && cargo run
+# or for OAuth example
+cd examples/oauth_example && cargo run
 ```
 
 Then test the endpoints:
@@ -283,20 +254,10 @@ curl -X POST http://localhost:8080/auth/login \
   -H "Content-Type: application/json" \
   -d '{"identifier": "user@example.com", "password": "secure_password"}'
 
-# Access protected endpoint
+# Access protected endpoint (session cookie is set automatically after login)
 curl http://localhost:8080/dashboard \
-  -H "Cookie: actix-passport-session=your_session_cookie"
+  --cookie-jar cookies.txt --cookie cookies.txt
 ```
-
-## Production Considerations
-
-### Security
-
-1. **Use HTTPS in production** - Set `cookie_secure(true)` for session middleware
-2. **Use strong JWT secrets** - Generate cryptographically secure random keys
-3. **Implement rate limiting** - Protect login endpoints from brute force attacks
-4. **Enable CSRF protection** - Validate state parameters in OAuth flows
-5. **Use secure session storage** - Redis or database instead of memory stores
 
 ### Database Integration
 
@@ -329,16 +290,6 @@ impl UserStore for PostgresUserStore {
 }
 ```
 
-### Performance
-
-- Use connection pooling for database stores
-- Implement session cleanup jobs for expired sessions
-- Consider Redis for session storage in multi-instance deployments
-- Enable gzip compression for JSON responses
-
-## Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
@@ -348,7 +299,3 @@ This project is licensed under either of
 - MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
 at your option.
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for version history.

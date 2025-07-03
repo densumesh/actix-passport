@@ -4,7 +4,7 @@
 //!
 //! ## Features
 //!
-//! - **Multiple Authentication Methods**: Username/password (with Argon2 hashing), OAuth 2.0, JWT tokens, and session-based authentication
+//! - **Multiple Authentication Methods**: Username/password (with Argon2 hashing), OAuth 2.0, and session-based authentication
 //! - **Pluggable Architecture**: Database-agnostic user stores, extensible OAuth providers
 //! - **Security First**: Built-in CSRF protection, secure session management, configurable CORS policies
 //! - **Developer Friendly**: Minimal boilerplate, type-safe extractors, comprehensive documentation
@@ -71,7 +71,6 @@
 //! - [`user_store::UserStore`] - Trait for user persistence (implement for your database)
 //! - [`password::service::PasswordAuthService`] - Service for password-based authentication using Argon2
 //! - [`oauth::OAuthProvider`] - Trait for OAuth 2.0 providers
-//! - Authentication middleware for session and JWT-based auth
 
 pub mod builder;
 
