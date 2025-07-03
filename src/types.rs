@@ -141,7 +141,7 @@ impl AuthUser {
     /// use serde_json::json;
     ///
     /// let user = AuthUser::new("user123")
-    ///     .with_oauth_provider("github", "github_user_123", json!({
+    ///     .with_oauth_provider("github", "github_user_123", &json!({
     ///         "username": "johndoe",
     ///         "avatar_url": "https://github.com/johndoe.png"
     ///     }));
@@ -186,8 +186,8 @@ impl AuthUser {
     /// use serde_json::json;
     ///
     /// let user = AuthUser::new("user123")
-    ///     .with_oauth_provider("github", "github_123", json!({}))
-    ///     .with_oauth_provider("google", "google_456", json!({}));
+    ///     .with_oauth_provider("github", "github_123", &json!({}))
+    ///     .with_oauth_provider("google", "google_456", &json!({}));
     ///
     /// let providers = user.get_oauth_providers();
     /// assert!(providers.contains(&"github".to_string()));
@@ -215,7 +215,7 @@ impl AuthUser {
     /// use serde_json::json;
     ///
     /// let user = AuthUser::new("user123")
-    ///     .with_oauth_provider("github", "github_123", json!({}));
+    ///     .with_oauth_provider("github", "github_123", &json!({}));
     ///
     /// assert!(user.has_oauth_provider("github"));
     /// assert!(!user.has_oauth_provider("google"));
