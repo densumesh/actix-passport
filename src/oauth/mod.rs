@@ -9,7 +9,7 @@ pub mod providers;
 /// OAuth service for managing multiple providers.
 pub mod service;
 
-use crate::types::AuthResult;
+use crate::{types::AuthResult, AuthUser};
 use async_trait::async_trait;
 use dyn_clone::DynClone;
 use serde::{Deserialize, Serialize};
@@ -150,6 +150,21 @@ pub struct OAuthUser {
     pub avatar_url: Option<String>,
     /// Raw user data returned by the provider
     pub raw_data: serde_json::Value,
+}
+
+impl From<OAuthUser> for AuthUser {
+    fn from(user: OAuthUser) -> Self {
+        Self::new(uuid::Uuid::new_v4().to_string())
+            .with_email(user.email.as_deref().unwrap_or_default())
+            .with_username(user.username.as_deref().unwrap_or_default())
+            .with_display_name(user.display_name.as_deref().unwrap_or_default())
+            .with_avatar_url(user.avatar_url.as_deref().unwrap_or_default())
+            .with_oauth_provider(
+                user.provider.clone(),
+                user.provider_id.clone(),
+                &user.raw_data,
+            )
+    }
 }
 
 /// Trait for OAuth provider implementations.

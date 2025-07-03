@@ -89,9 +89,29 @@ function showUserSection(user) {
     document.getElementById('user-section').style.display = 'block';
     
     // Update user info
-    document.getElementById('username-display').textContent = user.username || 'Anonymous';
+    document.getElementById('username-display').textContent = user.username || user.display_name || 'Anonymous';
     document.getElementById('user-id').textContent = user.id || 'N/A';
     document.getElementById('user-email').textContent = user.email || 'N/A';
+    document.getElementById('user-display-name').textContent = user.display_name || 'N/A';
+    
+    // Display OAuth providers with badges
+    const providersEl = document.getElementById('oauth-providers');
+    if (user.oauth_providers && user.oauth_providers.length > 0) {
+        providersEl.innerHTML = user.oauth_providers.map(provider => 
+            `<span style="background: #007bff; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-right: 5px;">${provider}</span>`
+        ).join('');
+    } else {
+        providersEl.textContent = 'Password authentication';
+    }
+    
+    // Format creation date
+    const createdEl = document.getElementById('user-created');
+    if (user.created_at) {
+        const date = new Date(user.created_at);
+        createdEl.textContent = date.toLocaleDateString();
+    } else {
+        createdEl.textContent = 'N/A';
+    }
     
     // Clear forms
     document.getElementById('login-form').reset();

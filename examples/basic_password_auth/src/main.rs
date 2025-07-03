@@ -54,7 +54,7 @@ impl UserStore for InMemoryUserStore {
 }
 
 async fn hello_world(user: AuthedUser) -> HttpResponse {
-    HttpResponse::Ok().body(format!("Hello, {:?}!", user.0.username))
+    HttpResponse::Ok().body(format!("Hello, {:?}!", user.username))
 }
 
 #[actix_web::main]

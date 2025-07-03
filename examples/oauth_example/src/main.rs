@@ -66,14 +66,11 @@ async fn hello_world(user: AuthedUser) -> HttpResponse {
             "id": user.0.id,
             "username": user.0.username,
             "email": user.0.email,
+            "display_name": user.0.display_name,
+            "avatar_url": user.0.avatar_url,
+            "oauth_providers": user.0.get_oauth_providers(),
+            "created_at": user.0.created_at,
         }
-    }))
-}
-
-async fn health_check() -> HttpResponse {
-    HttpResponse::Ok().json(serde_json::json!({
-        "status": "healthy",
-        "service": "OAuth Example"
     }))
 }
 
@@ -146,7 +143,6 @@ async fn main() -> std::io::Result<()> {
             // Configure OAuth routes
             .configure(|cfg| auth_framework.configure_routes(cfg))
             .route("/api/user", web::get().to(hello_world))
-            .route("/api/health", web::get().to(health_check))
             // Serve static files (frontend)
             .service(Files::new("/", "static").index_file("index.html"))
     })

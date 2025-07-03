@@ -66,6 +66,13 @@ impl OAuthProvider for GoogleOAuthProvider {
     }
 
     async fn exchange_code(&self, code: &str, redirect_uri: &str) -> AuthResult<OAuthUser> {
-        self.inner.exchange_code(code, redirect_uri).await
+        let user = self.inner.exchange_code(code, redirect_uri).await?;
+        let google_user = OAuthUser {
+            username: user.raw_data["name"].as_str().map(ToString::to_string),
+            display_name: user.raw_data["name"].as_str().map(ToString::to_string),
+            ..user
+        };
+
+        Ok(google_user)
     }
 }

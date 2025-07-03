@@ -10,7 +10,10 @@ use crate::middleware::schemes::get_user_from_request;
 use crate::types::AuthUser;
 use actix_web::{error::ErrorUnauthorized, FromRequest, HttpMessage, HttpRequest};
 use futures_util::future::{FutureExt, LocalBoxFuture};
-use std::future::{ready, Ready};
+use std::{
+    future::{ready, Ready},
+    ops::Deref,
+};
 
 /// Extractable authenticated user from request.
 ///
@@ -31,6 +34,13 @@ use std::future::{ready, Ready};
 /// ```
 #[derive(Debug, Clone)]
 pub struct AuthedUser(pub AuthUser);
+
+impl Deref for AuthedUser {
+    type Target = AuthUser;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl FromRequest for AuthedUser {
     type Error = actix_web::Error;

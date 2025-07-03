@@ -38,6 +38,7 @@ pub struct AuthUser {
     /// Timestamp of the user's last login (optional)
     pub last_login: Option<DateTime<Utc>>,
     /// Additional custom metadata for the user
+    #[serde(skip_serializing)]
     pub metadata: HashMap<String, serde_json::Value>,
 }
 
@@ -109,6 +110,137 @@ impl AuthUser {
     pub fn with_display_name(mut self, display_name: impl Into<String>) -> Self {
         self.display_name = Some(display_name.into());
         self
+    }
+
+    /// Sets the avatar URL for the user.
+    ///
+    /// # Arguments
+    ///
+    /// * `avatar_url` - The user's avatar image URL
+    #[must_use]
+    pub fn with_avatar_url(mut self, avatar_url: impl Into<String>) -> Self {
+        self.avatar_url = Some(avatar_url.into());
+        self
+    }
+
+    /// Adds an OAuth provider to the user's metadata.
+    ///
+    /// This stores information about which OAuth providers the user has connected,
+    /// along with provider-specific data like provider user ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `provider` - The name of the OAuth provider (e.g., "google", "github")
+    /// * `provider_user_id` - The user's ID from the OAuth provider
+    /// * `provider_data` - Additional provider-specific data
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use actix_passport::AuthUser;
+    /// use serde_json::json;
+    ///
+    /// let user = AuthUser::new("user123")
+    ///     .with_oauth_provider("github", "github_user_123", json!({
+    ///         "username": "johndoe",
+    ///         "avatar_url": "https://github.com/johndoe.png"
+    ///     }));
+    /// ```
+    #[must_use]
+    pub fn with_oauth_provider(
+        mut self,
+        provider: impl Into<String>,
+        provider_user_id: impl Into<String>,
+        provider_data: &serde_json::Value,
+    ) -> Self {
+        // Get or create the oauth_providers object in metadata
+        let mut default_oauth_providers = serde_json::Map::new();
+        let oauth_providers = self
+            .metadata
+            .entry("oauth_providers".to_string())
+            .or_insert_with(|| serde_json::json!({}))
+            .as_object_mut()
+            .unwrap_or(&mut default_oauth_providers);
+
+        // Store provider information
+        oauth_providers.insert(
+            provider.into(),
+            serde_json::json!({
+                "provider_user_id": provider_user_id.into(),
+                "connected_at": Utc::now(),
+                "data": provider_data
+            }),
+        );
+
+        self
+    }
+
+    /// Gets the list of OAuth providers connected to this user.
+    ///
+    /// Returns a vector of provider names that the user has connected.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use actix_passport::AuthUser;
+    /// use serde_json::json;
+    ///
+    /// let user = AuthUser::new("user123")
+    ///     .with_oauth_provider("github", "github_123", json!({}))
+    ///     .with_oauth_provider("google", "google_456", json!({}));
+    ///
+    /// let providers = user.get_oauth_providers();
+    /// assert!(providers.contains(&"github".to_string()));
+    /// assert!(providers.contains(&"google".to_string()));
+    /// ```
+    #[must_use]
+    pub fn get_oauth_providers(&self) -> Vec<String> {
+        self.metadata
+            .get("oauth_providers")
+            .and_then(|providers| providers.as_object())
+            .map(|obj| obj.keys().cloned().collect())
+            .unwrap_or_default()
+    }
+
+    /// Checks if the user has connected a specific OAuth provider.
+    ///
+    /// # Arguments
+    ///
+    /// * `provider` - The name of the OAuth provider to check
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use actix_passport::AuthUser;
+    /// use serde_json::json;
+    ///
+    /// let user = AuthUser::new("user123")
+    ///     .with_oauth_provider("github", "github_123", json!({}));
+    ///
+    /// assert!(user.has_oauth_provider("github"));
+    /// assert!(!user.has_oauth_provider("google"));
+    /// ```
+    #[must_use]
+    pub fn has_oauth_provider(&self, provider: &str) -> bool {
+        self.metadata
+            .get("oauth_providers")
+            .and_then(|providers| providers.as_object())
+            .is_some_and(|obj| obj.contains_key(provider))
+    }
+
+    /// Gets OAuth provider data for a specific provider.
+    ///
+    /// Returns the stored data for the specified OAuth provider, if connected.
+    ///
+    /// # Arguments
+    ///
+    /// * `provider` - The name of the OAuth provider
+    #[must_use]
+    pub fn get_oauth_provider_data(&self, provider: &str) -> Option<&serde_json::Value> {
+        self.metadata
+            .get("oauth_providers")
+            .and_then(|providers| providers.as_object())
+            .and_then(|obj| obj.get(provider))
     }
 }
 

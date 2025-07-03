@@ -42,7 +42,7 @@ impl GitHubOAuthProvider {
             auth_url: "https://github.com/login/oauth/authorize".to_string(),
             token_url: "https://github.com/login/oauth/access_token".to_string(),
             user_info_url: "https://api.github.com/user".to_string(),
-            scopes: vec!["user:email".to_string()],
+            scopes: vec!["user".to_string()],
         };
 
         Self {
@@ -62,6 +62,13 @@ impl OAuthProvider for GitHubOAuthProvider {
     }
 
     async fn exchange_code(&self, code: &str, redirect_uri: &str) -> AuthResult<OAuthUser> {
-        self.inner.exchange_code(code, redirect_uri).await
+        let user = self.inner.exchange_code(code, redirect_uri).await?;
+        let github_user = OAuthUser {
+            username: user.raw_data["login"].as_str().map(ToString::to_string),
+            display_name: user.raw_data["name"].as_str().map(ToString::to_string),
+            ..user
+        };
+
+        Ok(github_user)
     }
 }

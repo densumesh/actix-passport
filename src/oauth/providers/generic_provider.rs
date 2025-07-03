@@ -89,6 +89,7 @@ impl OAuthProvider for GenericOAuthProvider {
         let token_response = self
             .client
             .post(&self.config.token_url)
+            .header("Accept", "application/json")
             .form(&token_params)
             .send()
             .await
@@ -111,14 +112,16 @@ impl OAuthProvider for GenericOAuthProvider {
             .client
             .get(&self.config.user_info_url)
             .bearer_auth(&token_data.access_token)
+            .header("User-Agent", "actix-passport")
             .send()
             .await
             .map_err(|e| AuthError::OAuth(format!("User info request failed: {e}")))?;
 
         if !user_response.status().is_success() {
+            let status = user_response.status();
+            let error_text = user_response.text().await.unwrap_or_default();
             return Err(AuthError::OAuth(format!(
-                "User info request failed with status: {}",
-                user_response.status()
+                "User info request failed with status: {status}. Error: {error_text}"
             )));
         }
 
