@@ -12,7 +12,6 @@ The project is structured to be modular and customizable, allowing developers to
 - **Multiple Authentication Strategies:**
   - **Password-based:** Securely handles username/password authentication using Argon2 for password hashing.
   - **OAuth 2.0:** Supports popular OAuth providers like Google and GitHub, with an extensible system for adding custom providers.
-  - **JWT (JSON Web Tokens):** Provides middleware for stateless authentication using JWTs.
   - **Session-based:** Manages user sessions with persistent or cookie-based session stores.
 
 - **Pluggable Architecture:**
@@ -23,7 +22,7 @@ The project is structured to be modular and customizable, allowing developers to
 - **Developer-Friendly API:**
   - **Builder Pattern:** A `AuthBuilder` provides a fluent interface for configuring the authentication middleware.
   - **Type-safe Extractors:** `AuthenticatedUser` and `OptionalAuthenticatedUser` extractors for use in Actix-web handlers.
-  - **Feature Flags:** Allows for enabling or disabling specific authentication features (`password`, `oauth`, `jwt`).
+  - **Feature Flags:** Allows for enabling or disabling specific authentication features (`password`, `oauth`).
 
 ## Codebase Structure
 
@@ -58,6 +57,5 @@ The project relies on several key dependencies:
 - `actix-web`: The web framework for which this authentication library is built.
 - `actix-session`: For session management.
 - `serde`: For serialization and deserialization of data.
-- `jsonwebtoken`: For handling JWTs.
 - `reqwest`: For making HTTP requests, used in the OAuth flow.
 - `argon2`: For password hashing.
