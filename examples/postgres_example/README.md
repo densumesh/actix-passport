@@ -66,14 +66,12 @@ CREATE TABLE users (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     last_login TIMESTAMP WITH TIME ZONE,
     metadata JSONB DEFAULT '{}'::JSONB,
-    oauth_providers JSONB DEFAULT '[]'::JSONB
 );
 
 -- Performance indexes
 CREATE INDEX idx_users_email ON users(email) WHERE email IS NOT NULL;
 CREATE INDEX idx_users_username ON users(username) WHERE username IS NOT NULL;
 CREATE INDEX idx_users_created_at ON users(created_at);
-CREATE INDEX idx_users_oauth_providers ON users USING GIN(oauth_providers);
 ```
 
 ## Project Structure

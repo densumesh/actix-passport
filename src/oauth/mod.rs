@@ -143,7 +143,7 @@ struct TokenResponse {
 ///
 /// This struct contains the user information that OAuth providers
 /// return after successful authentication.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct OAuthUser {
     /// Name of the OAuth provider (e.g., "google", "github")
     pub provider: String,
@@ -168,11 +168,7 @@ impl From<OAuthUser> for AuthUser {
             .with_username(user.username.as_deref().unwrap_or_default())
             .with_display_name(user.display_name.as_deref().unwrap_or_default())
             .with_avatar_url(user.avatar_url.as_deref().unwrap_or_default())
-            .with_oauth_provider(
-                user.provider.clone(),
-                user.provider_id.clone(),
-                &user.raw_data,
-            )
+            .with_oauth_provider(user)
     }
 }
 

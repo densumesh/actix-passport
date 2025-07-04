@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::errors::AuthError;
+use crate::{errors::AuthError, OAuthUser};
 
 /// Represents an authenticated user in the system.
 ///
@@ -148,22 +148,22 @@ impl AuthUser {
     /// # Examples
     ///
     /// ```rust
-    /// use actix_passport::AuthUser;
+    /// use actix_passport::{AuthUser, OAuthUser};
     /// use serde_json::json;
     ///
     /// let user = AuthUser::new("user123")
-    ///     .with_oauth_provider("github", "github_user_123", &json!({
-    ///         "username": "johndoe",
-    ///         "avatar_url": "https://github.com/johndoe.png"
-    ///     }));
+    ///     .with_oauth_provider(OAuthUser {
+    ///         provider: "github".to_string(),
+    ///         provider_id: "github_user_123".to_string(),
+    ///         raw_data: json!({
+    ///             "username": "johndoe",
+    ///             "avatar_url": "https://github.com/johndoe.png"
+    ///         }),
+    ///         ..Default::default()
+    ///     });
     /// ```
     #[must_use]
-    pub fn with_oauth_provider(
-        mut self,
-        provider: impl Into<String>,
-        provider_user_id: impl Into<String>,
-        provider_data: &serde_json::Value,
-    ) -> Self {
+    pub fn with_oauth_provider(mut self, provider_data: OAuthUser) -> Self {
         // Get or create the oauth_providers object in metadata
         let mut default_oauth_providers = serde_json::Map::new();
         let oauth_providers = self
@@ -175,12 +175,8 @@ impl AuthUser {
 
         // Store provider information
         oauth_providers.insert(
-            provider.into(),
-            serde_json::json!({
-                "provider_user_id": provider_user_id.into(),
-                "connected_at": Utc::now(),
-                "data": provider_data
-            }),
+            provider_data.provider.clone(),
+            serde_json::to_value(provider_data).unwrap_or_default(),
         );
 
         self
@@ -193,23 +189,35 @@ impl AuthUser {
     /// # Examples
     ///
     /// ```rust
-    /// use actix_passport::AuthUser;
+    /// use actix_passport::{AuthUser, OAuthUser};
     /// use serde_json::json;
     ///
     /// let user = AuthUser::new("user123")
-    ///     .with_oauth_provider("github", "github_123", &json!({}))
-    ///     .with_oauth_provider("google", "google_456", &json!({}));
+    ///     .with_oauth_provider(OAuthUser {
+    ///         provider: "github".to_string(),
+    ///         provider_id: "github_123".to_string(),
+    ///         ..Default::default()
+    ///     })
+    ///     .with_oauth_provider(OAuthUser {
+    ///         provider: "google".to_string(),
+    ///         provider_id: "google_456".to_string(),
+    ///         ..Default::default()
+    ///     });
     ///
     /// let providers = user.get_oauth_providers();
-    /// assert!(providers.contains(&"github".to_string()));
-    /// assert!(providers.contains(&"google".to_string()));
+    /// assert!(providers.iter().any(|p| p.provider == "github"));
+    /// assert!(providers.iter().any(|p| p.provider == "google"));
     /// ```
     #[must_use]
-    pub fn get_oauth_providers(&self) -> Vec<String> {
+    pub fn get_oauth_providers(&self) -> Vec<OAuthUser> {
         self.metadata
             .get("oauth_providers")
             .and_then(|providers| providers.as_object())
-            .map(|obj| obj.keys().cloned().collect())
+            .map(|obj| {
+                obj.iter()
+                    .map(|(_, value)| serde_json::from_value(value.clone()).unwrap_or_default())
+                    .collect()
+            })
             .unwrap_or_default()
     }
 
@@ -222,11 +230,15 @@ impl AuthUser {
     /// # Examples
     ///
     /// ```rust
-    /// use actix_passport::AuthUser;
+    /// use actix_passport::{AuthUser, OAuthUser};
     /// use serde_json::json;
     ///
     /// let user = AuthUser::new("user123")
-    ///     .with_oauth_provider("github", "github_123", &json!({}));
+    ///     .with_oauth_provider(OAuthUser {
+    ///         provider: "github".to_string(),
+    ///         provider_id: "github_123".to_string(),
+    ///         ..Default::default()
+    ///     });
     ///
     /// assert!(user.has_oauth_provider("github"));
     /// assert!(!user.has_oauth_provider("google"));

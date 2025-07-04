@@ -25,13 +25,31 @@ thiserror = "2.0"
 futures-util = "0.3"
 dyn-clone = "1.0.19"
 
+# Optional database dependencies
+sqlx = { version = "0.8", optional = true, default-features = false }
+mongodb = { version = "3.2", optional = true }
+redis = { version = "0.32", optional = true, default-features = false }
+bson = { version = "2.9", optional = true }
+
 [dev-dependencies]
 actix-http = "3.11"
 
 [features]
-default = ["password", "oauth"]
+default = ["password", "oauth", "postgres"]
 password = []
 oauth = []
+
+# Database store implementations
+postgres = [
+    "dep:sqlx",
+    "sqlx/postgres",
+    "sqlx/runtime-tokio-rustls",
+    "sqlx/chrono",
+    "sqlx/uuid",
+    "sqlx/json",
+    "sqlx/migrate",
+    "sqlx/macros",
+]
 
 [lints.rust]
 missing_docs = "warn"

@@ -1,10 +1,20 @@
 use actix_files::Files;
 use actix_passport::prelude::*;
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
-use actix_web::{cookie::Key, web, App, HttpResponse, HttpServer};
+use actix_web::{cookie::Key, web, App, HttpResponse, HttpServer, Result, Responder};
 
-async fn hello_world(user: AuthedUser) -> HttpResponse {
-    HttpResponse::Ok().body(format!("Hello, {:?}!", user.username))
+async fn user_info(user: AuthedUser) -> Result<impl Responder> {
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "display_name": user.display_name,
+            "avatar_url": user.avatar_url,
+            "oauth_providers": user.get_oauth_providers(),
+            "created_at": user.created_at,
+        }
+    })))
 }
 
 #[actix_web::main]
@@ -32,7 +42,7 @@ async fn main() -> std::io::Result<()> {
                 .build(), // For local HTTP testing
             )
             .configure(|cfg| auth_framework.configure_routes(cfg))
-            .route("/hello", web::get().to(hello_world))
+            .route("/api/user", web::get().to(user_info))
             .service(Files::new("/", "static").index_file("index.html"))
     })
     .bind("127.0.0.1:8080")?

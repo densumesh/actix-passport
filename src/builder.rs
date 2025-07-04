@@ -7,6 +7,8 @@ use crate::{
     types::AuthConfig,
     user_store::stores::in_memory::InMemoryUserStore,
 };
+#[cfg(feature = "postgres")]
+use crate::{PostgresConfig, PostgresUserStore};
 use std::sync::Arc;
 
 /// The main authentication framework object.
@@ -95,19 +97,6 @@ where
     enable_password_auth: bool,
     oauth_providers: Vec<Box<dyn OAuthProvider>>,
     config: AuthConfig,
-}
-
-impl ActixPassportBuilder<InMemoryUserStore> {
-    /// Creates a new builder with an in-memory user store.
-    #[must_use]
-    pub fn with_in_memory_store() -> Self {
-        Self {
-            user_store: InMemoryUserStore::default(),
-            enable_password_auth: false,
-            oauth_providers: Vec::new(),
-            config: AuthConfig::default(),
-        }
-    }
 }
 
 impl<U> ActixPassportBuilder<U>
@@ -275,5 +264,109 @@ where
             oauth_service,
             config: Arc::new(config),
         }
+    }
+}
+
+impl ActixPassportBuilder<InMemoryUserStore> {
+    /// Creates a new builder with an in-memory user store.
+    ///
+    /// This is a convenience method for quick setup and development.
+    /// The in-memory store is not persistent and data will be lost
+    /// when the application restarts.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use actix_passport::ActixPassportBuilder;
+    ///
+    /// let framework = ActixPassportBuilder::with_in_memory_store()
+    ///     .enable_password_auth()
+    ///     .build();
+    /// ```
+    #[must_use]
+    pub fn with_in_memory_store() -> Self {
+        Self::new(InMemoryUserStore::new())
+    }
+}
+
+#[cfg(feature = "postgres")]
+impl ActixPassportBuilder<PostgresUserStore> {
+    /// Creates a new builder with a `PostgreSQL` user store.
+    ///
+    /// This method connects to `PostgreSQL` using the provided connection string
+    /// and automatically runs migrations if enabled in the configuration.
+    ///
+    /// # Arguments
+    ///
+    /// * `database_url` - `PostgreSQL` connection string (e.g., "<postgres://user:pass@localhost/db>")
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use actix_passport::ActixPassportBuilder;
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let framework = ActixPassportBuilder::with_postgres_store("postgres://user:pass@localhost/db")
+    ///     .await
+    ///     .unwrap()
+    ///     .enable_password_auth()
+    ///     .build();
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the database connection fails or migrations fail.
+    pub async fn with_postgres_store(
+        database_url: &str,
+    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        let store = PostgresUserStore::new(database_url).await?;
+        Ok(Self::new(store))
+    }
+
+    /// Creates a new builder with a `PostgreSQL` user store using custom configuration.
+    ///
+    /// # Arguments
+    ///
+    /// * `database_url` - `PostgreSQL` connection string
+    /// * `config` - `PostgreSQL` store configuration
+    ///
+    /// # Errors
+    ///
+    /// * `Err(Box<dyn std::error::Error + Send + Sync>)` - If the database connection fails or migrations fail
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Self)` - If the store is created successfully
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use actix_passport::{ActixPassportBuilder, user_store::stores::postgres::PostgresConfig};
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let config = PostgresConfig {
+    ///     max_connections: 20,
+    ///     auto_migrate: false,
+    /// };
+    ///
+    /// let framework = ActixPassportBuilder::with_postgres_store_config(
+    ///         "postgres://user:pass@localhost/db",
+    ///         config
+    ///     )
+    ///     .await
+    ///     .unwrap()
+    ///     .enable_password_auth()
+    ///     .build();
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn with_postgres_store_config(
+        database_url: &str,
+        config: PostgresConfig,
+    ) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        let store = PostgresUserStore::with_config(database_url, config).await?;
+        Ok(Self::new(store))
     }
 }

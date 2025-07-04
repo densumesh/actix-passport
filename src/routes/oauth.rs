@@ -147,11 +147,7 @@ pub async fn oauth_callback(
         {
             Ok(Some(mut existing_user)) => {
                 // User exists - add this OAuth provider to their account
-                existing_user = existing_user.with_oauth_provider(
-                    oauth_user.provider.clone(),
-                    oauth_user.provider_id.clone(),
-                    &oauth_user.raw_data,
-                );
+                existing_user = existing_user.with_oauth_provider(oauth_user);
 
                 // Update user with new OAuth provider
                 match framework.user_store.update_user(existing_user).await {

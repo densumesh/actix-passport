@@ -119,3 +119,7 @@ pub use crate::oauth::{
     service::OAuthService,
     OAuthConfig, OAuthProvider, OAuthUser,
 };
+
+// Re-export database stores
+#[cfg(feature = "postgres")]
+pub use crate::user_store::stores::postgres::{PostgresUserStore, PostgresConfig};
