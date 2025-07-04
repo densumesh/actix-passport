@@ -51,7 +51,9 @@ fn create_password_test_app(
 
 async fn protected_route(user: AuthedUser) -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().json(serde_json::json!({
-        "user_id": user.0.id,
+        "id": user.0.id,
+        "email": user.0.email,
+        "username": user.0.username,
         "message": "This is a protected route"
     })))
 }
@@ -332,7 +334,7 @@ mod password_tests {
 
         // Get current user
         let req = actix_web::test::TestRequest::get()
-            .uri("/auth/me")
+            .uri("/protected")
             .cookie(cookie)
             .to_request();
 
@@ -375,7 +377,7 @@ mod password_tests {
         );
 
         let body: serde_json::Value = actix_web::test::read_body_json(resp).await;
-        assert!(body["user_id"].is_string());
+        assert!(body["id"].is_string());
         assert_eq!(body["message"], "This is a protected route");
     }
 
@@ -420,7 +422,7 @@ mod password_tests {
 
         // Verify each user gets their own data
         let req1 = actix_web::test::TestRequest::get()
-            .uri("/auth/me")
+            .uri("/protected")
             .cookie(cookie1)
             .to_request();
 
@@ -428,7 +430,7 @@ mod password_tests {
         let body1: serde_json::Value = actix_web::test::read_body_json(resp1).await;
 
         let req2 = actix_web::test::TestRequest::get()
-            .uri("/auth/me")
+            .uri("/protected")
             .cookie(cookie2)
             .to_request();
 
@@ -457,7 +459,7 @@ mod password_tests {
         // Make multiple requests with the same cookie
         for i in 0..3 {
             let req = actix_web::test::TestRequest::get()
-                .uri("/auth/me")
+                .uri("/protected")
                 .cookie(cookie.clone())
                 .to_request();
 

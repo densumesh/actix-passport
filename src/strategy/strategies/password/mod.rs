@@ -22,12 +22,13 @@ pub mod routes;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use actix_passport::strategy::password::PasswordStrategy;
-/// use actix_passport::{ActixPassportBuilder, user_store::stores::InMemoryUserStore};
+/// use actix_passport::strategy::strategies::password::PasswordStrategy;
+/// use actix_passport::{ActixPassportBuilder, prelude::InMemoryUserStore};
 ///
-/// let strategy = PasswordStrategy::new(Box::new(InMemoryUserStore::new()));
-/// let framework = ActixPassportBuilder::new(InMemoryUserStore::new())
-///     .add_strategy(Box::new(strategy))
+/// let store = InMemoryUserStore::new();
+/// let strategy = PasswordStrategy::new(store.clone());
+/// let framework = ActixPassportBuilder::new(store)
+///     .add_strategy(strategy)
 ///     .build();
 /// ```
 pub struct PasswordStrategy {

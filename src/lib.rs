@@ -13,6 +13,7 @@
 //!
 //! ```rust,no_run
 //! use actix_passport::{ActixPassportBuilder, user_store::UserStore, types::{AuthResult, AuthUser}};
+//! use actix_passport::strategy::strategies::password::PasswordStrategy;
 //! use actix_web::{web, App, HttpServer};
 //! use actix_session::SessionMiddleware;
 //! use async_trait::async_trait;
@@ -38,8 +39,9 @@
 //! #[actix_web::main]
 //! async fn main() -> std::io::Result<()> {
 //!     // Configure authentication framework
+//!     let password_strategy = PasswordStrategy::new(MyUserStore);
 //!     let auth_framework = ActixPassportBuilder::new(MyUserStore)
-//!         .enable_password_auth()  // Uses Argon2 hashing internally
+//!         .add_strategy(password_strategy)  // Add password authentication strategy
 //!         .build();
 //!
 //!     HttpServer::new(move || {

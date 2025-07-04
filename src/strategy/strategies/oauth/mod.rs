@@ -25,13 +25,14 @@ pub(crate) mod routes;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use actix_passport::strategy::oauth::OAuthStrategy;
-/// use actix_passport::{ActixPassportBuilder, GoogleOAuthProvider, user_store::stores::InMemoryUserStore};
+/// use actix_passport::strategy::strategies::oauth::OAuthStrategy;
+/// use actix_passport::{ActixPassportBuilder, GoogleOAuthProvider, prelude::InMemoryUserStore};
 ///
+/// let store = InMemoryUserStore::new();
 /// let provider = GoogleOAuthProvider::new("client_id".to_string(), "client_secret".to_string());
-/// let strategy = OAuthStrategy::new().with_provider(provider);
-/// let framework = ActixPassportBuilder::new(InMemoryUserStore::new())
-///     .add_strategy(Box::new(strategy))
+/// let strategy = OAuthStrategy::new(store.clone()).with_provider(provider);
+/// let framework = ActixPassportBuilder::new(store)
+///     .add_strategy(strategy)
 ///     .build();
 /// ```
 pub struct OAuthStrategy {

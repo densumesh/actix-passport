@@ -23,29 +23,28 @@ use dyn_clone::DynClone;
 ///
 /// ```rust,no_run
 /// use actix_passport::strategy::AuthStrategy;
-/// use actix_passport::{AuthError, AuthUser};
-/// use actix_web::{web::ServiceConfig, HttpRequest, Payload};
+/// use actix_passport::types::AuthUser;
+/// use actix_web::HttpRequest;
 /// use async_trait::async_trait;
+/// use dyn_clone::DynClone;
 ///
+/// #[derive(Clone)]
 /// struct CustomStrategy;
 ///
-/// #[async_trait]
+/// #[async_trait(?Send)]
 /// impl AuthStrategy for CustomStrategy {
 ///     fn name(&self) -> &'static str {
 ///         "custom"
 ///     }
 ///
-///     fn configure(&self, cfg: &mut ServiceConfig) {
+///     fn configure(&self, scope: actix_web::Scope) -> actix_web::Scope {
 ///         // Add custom routes
+///         scope
 ///     }
 ///
-///     async fn authenticate(
-///         &self,
-///         req: &HttpRequest,
-///         payload: &mut Payload,
-///     ) -> Result<AuthUser, AuthError> {
+///     async fn authenticate(&self, _req: &HttpRequest) -> Option<AuthUser> {
 ///         // Custom authentication logic
-///         Err(AuthError::Unauthorized)
+///         None
 ///     }
 /// }
 /// ```

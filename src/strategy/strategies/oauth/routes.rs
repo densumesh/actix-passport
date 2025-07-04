@@ -1,7 +1,5 @@
 //! Handlers for OAuth 2.0 routes.
 
-use std::sync::Arc;
-
 use crate::{oauth::service::OAuthService, USER_ID_KEY};
 use actix_session::Session;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
@@ -105,7 +103,7 @@ pub async fn oauth_initiate(
 pub async fn oauth_callback(
     provider: web::Path<String>,
     params: web::Query<OAuthCallbackParams>,
-    oauth_service: web::Data<Arc<OAuthService>>,
+    oauth_service: web::Data<OAuthService>,
     session: Session,
     req: HttpRequest,
 ) -> impl Responder {

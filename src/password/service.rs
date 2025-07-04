@@ -37,7 +37,7 @@ use serde_json;
 ///     async fn delete_user(&self, _id: &str) -> AuthResult<()> { Ok(()) }
 /// }
 ///
-/// let auth_service = PasswordAuthService::new(Box::new(MyUserStore));
+/// let auth_service = PasswordAuthService::new(MyUserStore);
 /// ```
 #[derive(Clone)]
 pub struct PasswordAuthService {

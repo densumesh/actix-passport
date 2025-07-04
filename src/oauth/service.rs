@@ -16,9 +16,10 @@ use crate::{
 /// # Examples
 ///
 /// ```rust
-/// use actix_passport::{OAuthService, GoogleOAuthProvider, GitHubOAuthProvider};
+/// use actix_passport::{OAuthService, GoogleOAuthProvider, GitHubOAuthProvider, prelude::InMemoryUserStore};
 ///
-/// let mut oauth_service = OAuthService::new();
+/// let user_store = InMemoryUserStore::new();
+/// let mut oauth_service = OAuthService::new(user_store);
 /// oauth_service.add_provider(Box::new(GoogleOAuthProvider::new(
 ///     "google_client_id".to_string(),
 ///     "google_client_secret".to_string(),
@@ -55,7 +56,8 @@ impl OAuthService {
     /// ```rust
     /// use actix_passport::{OAuthService, GoogleOAuthProvider};
     ///
-    /// let mut service = OAuthService::new();
+    /// let user_store = actix_passport::prelude::InMemoryUserStore::new();
+    /// let mut service = OAuthService::new(user_store);
     /// service.add_provider(Box::new(GoogleOAuthProvider::new(
     ///     "client_id".to_string(),
     ///     "client_secret".to_string(),

@@ -47,8 +47,10 @@ async fn protected_route(user: AuthedUser) -> Result<HttpResponse> {
 
 fn build_oauth_framework_with_google() -> ActixPassport {
     let in_memory_user_store = InMemoryUserStore::new();
-    let google_provider =
-        GoogleOAuthProvider::new("test_client_id".to_string(), "test_secret".to_string());
+    let google_provider = GoogleOAuthProvider::new(
+        "test_google_client_id".to_string(),
+        "test_google_client_secret".to_string(),
+    );
     let oauth_strategy =
         OAuthStrategy::new(in_memory_user_store.clone()).with_provider(google_provider);
 
@@ -129,6 +131,7 @@ mod oauth_tests {
 
         // Check if Location header contains google.com
         let location = resp.headers().get("Location").unwrap().to_str().unwrap();
+        println!("Location: {location}");
         assert!(
             location.contains("accounts.google.com"),
             "Should redirect to Google OAuth URL"

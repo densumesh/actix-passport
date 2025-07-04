@@ -29,8 +29,9 @@ use crate::{prelude::UserStore, strategy::AuthStrategy};
 /// #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
 /// # }
 ///
+/// let password_strategy = actix_passport::strategy::strategies::password::PasswordStrategy::new(MyUserStore);
 /// let auth_framework = ActixPassportBuilder::new(MyUserStore)
-///     .enable_password_auth()
+///     .add_strategy(password_strategy)
 ///     .build();
 /// ```
 #[derive(Clone)]
@@ -68,11 +69,9 @@ pub struct ActixPassport {
 /// # #[cfg(feature = "oauth")]
 /// # use actix_passport::GoogleOAuthProvider;
 ///
+/// let password_strategy = actix_passport::strategy::strategies::password::PasswordStrategy::new(MyUserStore);
 /// let builder = ActixPassportBuilder::new(MyUserStore)
-///     .enable_password_auth();  // Enables Argon2-based password authentication
-///
-/// # #[cfg(feature = "oauth")]
-/// # let builder = builder.with_oauth(GoogleOAuthProvider::new("client_id".to_string(), "client_secret".to_string()));
+///     .add_strategy(password_strategy);  // Add password authentication strategy
 ///
 /// let framework = builder.build();
 /// ```
@@ -110,7 +109,7 @@ where
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use actix_passport::{ActixPassportBuilder, strategy::password::PasswordStrategy};
+    /// use actix_passport::{ActixPassportBuilder, strategy::strategies::password::PasswordStrategy};
     /// # use actix_passport::{user_store::UserStore, types::{AuthResult, AuthUser}};
     /// # use async_trait::async_trait;
     /// # #[derive(Clone)] struct MyUserStore;
@@ -123,9 +122,9 @@ where
     /// #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
     /// # }
     ///
-    /// let strategy = PasswordStrategy::new(Box::new(MyUserStore));
+    /// let strategy = actix_passport::strategy::strategies::password::PasswordStrategy::new(MyUserStore);
     /// let framework = ActixPassportBuilder::new(MyUserStore)
-    ///     .add_strategy(Box::new(strategy))
+    ///     .add_strategy(strategy)
     ///     .build();
     /// ```
     #[must_use]

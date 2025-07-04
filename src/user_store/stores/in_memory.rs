@@ -25,9 +25,12 @@ use crate::{
 ///
 /// ```rust
 /// use actix_passport::{user_store::stores::in_memory::InMemoryUserStore, ActixPassportBuilder};
+/// use actix_passport::strategy::strategies::password::PasswordStrategy;
 ///
-/// let auth_framework = ActixPassportBuilder::with_in_memory_store()
-///     .enable_password_auth()
+/// let store = InMemoryUserStore::new();
+/// let password_strategy = PasswordStrategy::new(store.clone());
+/// let auth_framework = ActixPassportBuilder::new(store)
+///     .add_strategy(password_strategy)
 ///     .build();
 /// ```
 ///
@@ -35,9 +38,13 @@ use crate::{
 ///
 /// ```rust
 /// use actix_passport::ActixPassportBuilder;
+/// use actix_passport::strategy::strategies::password::PasswordStrategy;
+/// use actix_passport::prelude::InMemoryUserStore;
 ///
-/// let auth_framework = ActixPassportBuilder::with_in_memory_store()
-///     .enable_password_auth()
+/// let store = InMemoryUserStore::new();
+/// let password_strategy = PasswordStrategy::new(store.clone());
+/// let auth_framework = ActixPassportBuilder::new(store)
+///     .add_strategy(password_strategy)
 ///     .build();
 /// ```
 #[derive(Clone)]
