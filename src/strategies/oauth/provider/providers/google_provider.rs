@@ -1,6 +1,6 @@
 use crate::{
-    oauth::providers::generic_provider::GenericOAuthProvider,
-    oauth::{OAuthConfig, OAuthProvider, OAuthUser},
+    strategies::oauth::provider::providers::generic_provider::GenericOAuthProvider,
+    strategies::oauth::provider::{OAuthConfig, OAuthProvider, OAuthUser},
     types::AuthResult,
 };
 use async_trait::async_trait;

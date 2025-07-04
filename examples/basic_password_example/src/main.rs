@@ -1,5 +1,5 @@
 use actix_files::Files;
-use actix_passport::{prelude::*, strategy::strategies::password::PasswordStrategy};
+use actix_passport::prelude::*;
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{cookie::Key, web, App, HttpResponse, HttpServer, Responder, Result};
 
@@ -21,12 +21,9 @@ async fn user_info(user: AuthedUser) -> Result<impl Responder> {
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    // 1. Use the builder to construct the framework
-    let user_store = InMemoryUserStore::new();
-    let password_strategy = PasswordStrategy::new(user_store.clone());
-
-    let auth_framework = ActixPassportBuilder::new(user_store)
-        .add_strategy(password_strategy)
+    // 1. Use the builder with convenience methods
+    let auth_framework = ActixPassportBuilder::with_in_memory_store()
+        .enable_password_auth()
         .build();
 
     log::info!("Starting server at http://127.0.0.1:8080");

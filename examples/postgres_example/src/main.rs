@@ -1,8 +1,5 @@
 use actix_files::Files;
-use actix_passport::{
-    strategy::strategies::password::PasswordStrategy, ActixPassportBuilder, AuthedUser,
-    PostgresUserStore,
-};
+use actix_passport::{ActixPassportBuilder, AuthedUser, PostgresUserStore};
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{
     cookie::Key, middleware::Logger, web, App, HttpResponse, HttpServer, Responder, Result,
@@ -38,10 +35,9 @@ async fn main() -> std::io::Result<()> {
 
     // Configure authentication framework
     let user_store = PostgresUserStore::new(&database_url).await.unwrap();
-    let password_strategy = PasswordStrategy::new(user_store.clone());
 
     let auth_framework = ActixPassportBuilder::new(user_store)
-        .add_strategy(password_strategy)
+        .enable_password_auth()
         .build();
 
     println!("🚀 Starting server on http://localhost:8080");

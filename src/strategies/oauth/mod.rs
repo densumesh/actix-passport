@@ -1,9 +1,8 @@
 //! OAuth authentication strategy implementation.
 
 use crate::{
-    oauth::{service::OAuthService, OAuthProvider},
-    prelude::UserStore,
-    strategy::AuthStrategy,
+    strategies::oauth::{provider::OAuthProvider, service::OAuthService},
+    strategies::AuthStrategy,
     types::AuthUser,
     ActixPassport, USER_ID_KEY,
 };
@@ -15,7 +14,9 @@ use actix_web::{
 use async_trait::async_trait;
 use std::sync::Arc;
 
+pub mod provider;
 pub(crate) mod routes;
+pub(crate) mod service;
 
 /// OAuth-based authentication strategy.
 ///
@@ -25,12 +26,12 @@ pub(crate) mod routes;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use actix_passport::strategy::strategies::oauth::OAuthStrategy;
+/// use actix_passport::strategies::oauth::OAuthStrategy;
 /// use actix_passport::{ActixPassportBuilder, GoogleOAuthProvider, prelude::InMemoryUserStore};
 ///
 /// let store = InMemoryUserStore::new();
 /// let provider = GoogleOAuthProvider::new("client_id".to_string(), "client_secret".to_string());
-/// let strategy = OAuthStrategy::new(store.clone()).with_provider(provider);
+/// let strategy = OAuthStrategy::new(vec![Box::new(provider)]);
 /// let framework = ActixPassportBuilder::new(store)
 ///     .add_strategy(strategy)
 ///     .build();
@@ -46,9 +47,9 @@ impl OAuthStrategy {
     ///
     /// * `user_store` - The user store implementation for persisting users
     #[must_use]
-    pub fn new(user_store: impl UserStore + 'static) -> Self {
+    pub fn new(providers: Vec<Box<dyn OAuthProvider>>) -> Self {
         Self {
-            service: Arc::new(OAuthService::new(user_store)),
+            service: Arc::new(OAuthService::new(providers)),
         }
     }
 
@@ -58,9 +59,9 @@ impl OAuthStrategy {
     ///
     /// * `provider` - The OAuth provider implementation
     #[must_use]
-    pub fn with_provider(mut self, provider: impl OAuthProvider + 'static) -> Self {
+    pub fn with_provider(mut self, provider: Box<dyn OAuthProvider>) -> Self {
         // Should be ok because there should be no one else using this prior to this
-        Arc::make_mut(&mut self.service).add_provider(Box::new(provider));
+        Arc::make_mut(&mut self.service).add_provider(provider);
         self
     }
 }

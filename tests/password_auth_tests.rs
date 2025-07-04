@@ -9,7 +9,7 @@ use std::pin::Pin;
 
 use actix_http::Request;
 use actix_passport::{
-    prelude::InMemoryUserStore, strategy::strategies::password::PasswordStrategy, ActixPassport,
+    prelude::InMemoryUserStore, strategies::password::PasswordStrategy, ActixPassport,
     ActixPassportBuilder, AuthedUser,
 };
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
@@ -120,7 +120,7 @@ where
 
 fn build_password_auth_framework() -> ActixPassport {
     let in_memory_user_store = InMemoryUserStore::new();
-    let password_strategy = PasswordStrategy::new(in_memory_user_store.clone());
+    let password_strategy = PasswordStrategy::new();
 
     ActixPassportBuilder::new(in_memory_user_store)
         .add_strategy(password_strategy)

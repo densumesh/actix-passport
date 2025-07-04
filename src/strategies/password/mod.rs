@@ -1,18 +1,15 @@
 //! Password authentication strategy implementation.
 
-use crate::{
-    password::service::PasswordAuthService, prelude::UserStore, strategy::AuthStrategy,
-    types::AuthUser, ActixPassport, USER_ID_KEY,
-};
+use crate::{strategies::AuthStrategy, types::AuthUser, ActixPassport, USER_ID_KEY};
 use actix_session::SessionExt;
 use actix_web::{
     web::{self},
     HttpRequest,
 };
 use async_trait::async_trait;
-use std::sync::Arc;
 
-pub mod routes;
+pub(crate) mod routes;
+pub(crate) mod service;
 
 /// Password-based authentication strategy.
 ///
@@ -22,38 +19,21 @@ pub mod routes;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use actix_passport::strategy::strategies::password::PasswordStrategy;
+/// use actix_passport::strategies::password::PasswordStrategy;
 /// use actix_passport::{ActixPassportBuilder, prelude::InMemoryUserStore};
 ///
-/// let store = InMemoryUserStore::new();
-/// let strategy = PasswordStrategy::new(store.clone());
-/// let framework = ActixPassportBuilder::new(store)
-///     .add_strategy(strategy)
+/// let framework = ActixPassportBuilder::with_in_memory_store()
+///     .add_strategy(PasswordStrategy::new())
 ///     .build();
 /// ```
-pub struct PasswordStrategy {
-    service: Arc<PasswordAuthService>,
-}
+#[derive(Clone, Default)]
+pub struct PasswordStrategy;
 
 impl PasswordStrategy {
     /// Creates a new password authentication strategy.
-    ///
-    /// # Arguments
-    ///
-    /// * `user_store` - The user store implementation for persisting users
     #[must_use]
-    pub fn new(user_store: impl UserStore + 'static) -> Self {
-        Self {
-            service: Arc::new(PasswordAuthService::new(user_store)),
-        }
-    }
-}
-
-impl Clone for PasswordStrategy {
-    fn clone(&self) -> Self {
-        Self {
-            service: Arc::clone(&self.service),
-        }
+    pub const fn new() -> Self {
+        Self
     }
 }
 
@@ -65,7 +45,6 @@ impl AuthStrategy for PasswordStrategy {
 
     fn configure(&self, scope: actix_web::Scope) -> actix_web::Scope {
         scope
-            .app_data(web::Data::from(self.service.clone()))
             .service(web::resource("/register").route(web::post().to(routes::register_user)))
             .service(web::resource("/login").route(web::post().to(routes::login_user)))
             .service(web::resource("/logout").route(web::post().to(routes::logout_user)))

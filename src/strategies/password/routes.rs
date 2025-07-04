@@ -1,7 +1,8 @@
 //! Handlers for standard authentication routes.
 
-use crate::password::{LoginCredentials, RegisterCredentials};
-use crate::{PasswordAuthService, USER_ID_KEY};
+use super::service;
+use crate::strategies::password::service::{LoginCredentials, RegisterCredentials};
+use crate::{ActixPassport, USER_ID_KEY};
 use actix_session::Session;
 use actix_web::{web, HttpResponse, Responder};
 
@@ -10,9 +11,9 @@ use actix_web::{web, HttpResponse, Responder};
 /// `POST /auth/register`
 pub async fn register_user(
     credentials: web::Json<RegisterCredentials>,
-    password_service: web::Data<PasswordAuthService>,
+    framework: web::Data<ActixPassport>,
 ) -> impl Responder {
-    match password_service.register(credentials.into_inner()).await {
+    match service::register(framework.user_store.as_ref(), credentials.into_inner()).await {
         Ok(user) => HttpResponse::Ok().json(user),
         Err(e) => HttpResponse::BadRequest().json(e.to_string()),
     }
@@ -24,12 +25,12 @@ pub async fn register_user(
 #[allow(clippy::future_not_send)]
 pub async fn login_user(
     credentials: web::Json<LoginCredentials>,
-    password_service: web::Data<PasswordAuthService>,
+    framework: web::Data<ActixPassport>,
     session: Session,
 ) -> impl Responder
 where
 {
-    match password_service.login(credentials.into_inner()).await {
+    match service::login(framework.user_store.as_ref(), credentials.into_inner()).await {
         Ok(user) => {
             if session.insert(USER_ID_KEY, &user.id).is_err() {
                 return HttpResponse::InternalServerError().finish();

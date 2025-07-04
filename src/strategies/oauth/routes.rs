@@ -1,6 +1,6 @@
 //! Handlers for OAuth 2.0 routes.
 
-use crate::{oauth::service::OAuthService, USER_ID_KEY};
+use crate::{strategies::oauth::service::OAuthService, ActixPassport, USER_ID_KEY};
 use actix_session::Session;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use serde::Deserialize;
@@ -104,6 +104,7 @@ pub async fn oauth_callback(
     provider: web::Path<String>,
     params: web::Query<OAuthCallbackParams>,
     oauth_service: web::Data<OAuthService>,
+    framework: web::Data<ActixPassport>,
     session: Session,
     req: HttpRequest,
 ) -> impl Responder {
@@ -126,7 +127,12 @@ pub async fn oauth_callback(
     );
 
     match oauth_service
-        .callback(&provider_name, &params.code, &redirect_uri)
+        .callback(
+            framework.user_store.as_ref(),
+            &provider_name,
+            &params.code,
+            &redirect_uri,
+        )
         .await
     {
         Ok(user) => {

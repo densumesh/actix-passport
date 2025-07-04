@@ -1,6 +1,6 @@
 use crate::{
     errors::AuthError,
-    oauth::{OAuthConfig, OAuthProvider, OAuthUser, TokenResponse},
+    strategies::oauth::provider::{OAuthConfig, OAuthProvider, OAuthUser, TokenResponse},
     types::AuthResult,
 };
 use async_trait::async_trait;

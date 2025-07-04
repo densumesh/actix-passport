@@ -42,31 +42,9 @@ tokio = { version = "1.0", features = ["full"] }
 ### Basic Setup
 
 ```rust
-use actix_passport::{
-    ActixPassportBuilder, AuthedUser, OptionalAuthedUser,
-    user_store::UserStore, types::{AuthResult, AuthUser}
-};
+use actix_passport::prelude::*;
 use actix_session::{SessionMiddleware, storage::CookieSessionStore};
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
-use async_trait::async_trait;
-
-// Implement your user store (use a real database in production)
-#[derive(Clone)]
-struct MyUserStore;
-
-#[async_trait]
-impl UserStore for MyUserStore {
-    async fn find_by_id(&self, _id: &str) -> AuthResult<Option<AuthUser>> {
-        // Your database implementation here
-        Ok(None)
-    }
-    // ... implement other required methods
-    async fn find_by_email(&self, _email: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
-    async fn find_by_username(&self, _username: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
-    async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
-    async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
-    async fn delete_user(&self, _id: &str) -> AuthResult<()> { Ok(()) }
-}
+use actix_web::{get, web, App, HttpResponse, HttpServer, Responder, cookie::Key};
 
 #[get("/")]
 async fn home(user: OptionalAuthedUser) -> impl Responder {
@@ -83,20 +61,55 @@ async fn dashboard(user: AuthedUser) -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // Configure authentication framework
-    let auth_framework = ActixPassportBuilder::new(MyUserStore)
+    // Simple setup with in-memory store (for development)
+    let auth_framework = ActixPassportBuilder::with_in_memory_store()
         .enable_password_auth()
         .build();
 
     HttpServer::new(move || {
         App::new()
-            .wrap(SessionMiddleware::new(
+            // Session middleware is required
+            .wrap(SessionMiddleware::builder(
                 CookieSessionStore::default(),
-                actix_web::cookie::Key::generate(),
-            ))
-            .app_data(web::Data::new(auth_framework.clone()))
+                Key::generate()
+            ).build())
             .service(home)
             .service(dashboard)
+            .configure(|cfg| auth_framework.configure_routes(cfg))
+    })
+    .bind("127.0.0.1:8080")?
+    .run()
+    .await
+}
+```
+
+### Production Setup with PostgreSQL
+
+```rust
+use actix_passport::prelude::*;
+use actix_session::{SessionMiddleware, storage::CookieSessionStore};
+use actix_web::{web, App, HttpServer, cookie::Key};
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    let auth_framework = ActixPassportBuilder::with_postgres_store(
+            "postgres://user:password@localhost/myapp"
+        )
+        .await
+        .unwrap()
+        .enable_password_auth()
+        .with_google_oauth(
+            "your_google_client_id".to_string(),
+            "your_google_client_secret".to_string()
+        )
+        .build();
+
+    HttpServer::new(move || {
+        App::new()
+            .wrap(SessionMiddleware::builder(
+                CookieSessionStore::default(),
+                Key::generate()
+            ).build())
             .configure(|cfg| auth_framework.configure_routes(cfg))
     })
     .bind("127.0.0.1:8080")?

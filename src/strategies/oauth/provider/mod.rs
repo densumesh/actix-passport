@@ -6,8 +6,6 @@
 
 /// OAuth provider implementations for various services.
 pub mod providers;
-/// OAuth service for managing multiple providers.
-pub mod service;
 
 use crate::{types::AuthResult, AuthUser};
 use async_trait::async_trait;

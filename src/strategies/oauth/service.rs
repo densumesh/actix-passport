@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use crate::{
     errors::AuthError,
-    oauth::{OAuthProvider, OAuthUser},
     prelude::UserStore,
+    strategies::oauth::{provider::OAuthUser, OAuthProvider},
     types::AuthResult,
     AuthUser,
 };
@@ -19,30 +19,29 @@ use crate::{
 /// use actix_passport::{OAuthService, GoogleOAuthProvider, GitHubOAuthProvider, prelude::InMemoryUserStore};
 ///
 /// let user_store = InMemoryUserStore::new();
-/// let mut oauth_service = OAuthService::new(user_store);
-/// oauth_service.add_provider(Box::new(GoogleOAuthProvider::new(
+/// let mut oauth_service = OAuthService::new(vec![Box::new(GoogleOAuthProvider::new(
 ///     "google_client_id".to_string(),
 ///     "google_client_secret".to_string(),
-/// )));
-/// oauth_service.add_provider(Box::new(GitHubOAuthProvider::new(
+/// )), Box::new(GitHubOAuthProvider::new(
 ///     "github_client_id".to_string(),
 ///     "github_client_secret".to_string(),
-/// )));
+/// ))]);
 /// ```
 #[derive(Clone)]
 pub struct OAuthService {
     providers: HashMap<String, Box<dyn OAuthProvider>>,
-    user_store: Box<dyn UserStore>,
 }
 
 impl OAuthService {
     /// Creates a new OAuth service.
     #[must_use]
-    pub fn new(user_store: impl UserStore + 'static) -> Self {
-        Self {
-            user_store: Box::new(user_store),
-            providers: HashMap::new(),
-        }
+    pub fn new(providers: Vec<Box<dyn OAuthProvider>>) -> Self {
+        let providers = providers
+            .into_iter()
+            .map(|provider| (provider.name().to_string(), provider))
+            .collect::<HashMap<_, _>>();
+
+        Self { providers }
     }
 
     /// Adds an OAuth provider to the service.
@@ -57,11 +56,10 @@ impl OAuthService {
     /// use actix_passport::{OAuthService, GoogleOAuthProvider};
     ///
     /// let user_store = actix_passport::prelude::InMemoryUserStore::new();
-    /// let mut service = OAuthService::new(user_store);
-    /// service.add_provider(Box::new(GoogleOAuthProvider::new(
+    /// let mut service = OAuthService::new(vec![Box::new(GoogleOAuthProvider::new(
     ///     "client_id".to_string(),
     ///     "client_secret".to_string(),
-    /// )));
+    /// ))]);
     /// ```
     pub fn add_provider(&mut self, provider: Box<dyn OAuthProvider>) {
         let name = provider.name().to_string();
@@ -173,6 +171,7 @@ impl OAuthService {
     /// Returns an error if the provider is not found, code exchange fails, or user operations fail.
     pub async fn callback(
         &self,
+        user_store: &dyn UserStore,
         provider_name: &str,
         code: &str,
         redirect_uri: &str,
@@ -181,8 +180,7 @@ impl OAuthService {
             .exchange_code(provider_name, code, redirect_uri)
             .await?;
 
-        let user = match self
-            .user_store
+        let user = match user_store
             .find_by_email(oauth_user.email.as_deref().unwrap_or_default())
             .await
         {
@@ -191,12 +189,12 @@ impl OAuthService {
                 existing_user = existing_user.with_oauth_provider(oauth_user);
 
                 // Update user with new OAuth provider
-                self.user_store.update_user(existing_user).await?
+                user_store.update_user(existing_user).await?
             }
             Ok(None) => {
                 // Create a new user with OAuth provider information
                 let new_user = AuthUser::from(oauth_user);
-                self.user_store.create_user(new_user).await?
+                user_store.create_user(new_user).await?
             }
             Err(e) => return Err(e),
         };

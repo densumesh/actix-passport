@@ -31,16 +31,21 @@ pub use crate::user_store::{stores::in_memory::InMemoryUserStore, UserStore};
 // Error types
 pub use crate::errors::AuthError;
 
-// Password authentication types (feature-gated)
-#[cfg(feature = "password")]
-pub use crate::password::{LoginCredentials, RegisterCredentials};
-
 // OAuth types and providers (feature-gated)
 #[cfg(feature = "oauth")]
-pub use crate::oauth::{OAuthConfig, OAuthProvider, OAuthUser};
+pub use crate::strategies::oauth::provider::{OAuthConfig, OAuthProvider, OAuthUser};
 
 #[cfg(feature = "oauth")]
 pub use crate::{GenericOAuthProvider, GitHubOAuthProvider, GoogleOAuthProvider, OAuthService};
+
+// Strategy types for easy import
+#[cfg(feature = "password")]
+pub use crate::strategies::password::PasswordStrategy;
+
+#[cfg(feature = "oauth")]
+pub use crate::strategies::oauth::OAuthStrategy;
+
+pub use crate::strategies::AuthStrategy;
 
 // Re-export commonly used external types
 pub use actix_web::{HttpRequest, HttpResponse};

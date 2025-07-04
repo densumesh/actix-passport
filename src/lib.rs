@@ -12,40 +12,25 @@
 //! ## Quick Start
 //!
 //! ```rust,no_run
-//! use actix_passport::{ActixPassportBuilder, user_store::UserStore, types::{AuthResult, AuthUser}};
-//! use actix_passport::strategy::strategies::password::PasswordStrategy;
+//! use actix_passport::prelude::*;
 //! use actix_web::{web, App, HttpServer};
-//! use actix_session::SessionMiddleware;
-//! use async_trait::async_trait;
-//!
-//! // Implement your user store
-//! #[derive(Clone)]
-//! struct MyUserStore;
-//!
-//! #[async_trait]
-//! impl UserStore for MyUserStore {
-//!     async fn find_by_id(&self, id: &str) -> AuthResult<Option<AuthUser>> {
-//!         // Your implementation
-//!         Ok(None)
-//!     }
-//!     // ... implement other required methods
-//! #   async fn find_by_email(&self, email: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
-//! #   async fn find_by_username(&self, username: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
-//! #   async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
-//! #   async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
-//! #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
-//! }
+//! use actix_session::{SessionMiddleware, storage::CookieSessionStore};
+//! use actix_web::cookie::Key;
 //!
 //! #[actix_web::main]
 //! async fn main() -> std::io::Result<()> {
-//!     // Configure authentication framework
-//!     let password_strategy = PasswordStrategy::new(MyUserStore);
-//!     let auth_framework = ActixPassportBuilder::new(MyUserStore)
-//!         .add_strategy(password_strategy)  // Add password authentication strategy
+//!     // Configure authentication framework with convenience methods
+//!     let auth_framework = ActixPassportBuilder::with_in_memory_store()
+//!         .enable_password_auth()  // Easy password authentication setup
 //!         .build();
 //!
 //!     HttpServer::new(move || {
 //!         App::new()
+//!             // Session middleware is required for authentication
+//!             .wrap(SessionMiddleware::builder(
+//!                 CookieSessionStore::default(),
+//!                 Key::from(&[0; 64])
+//!             ).build())
 //!             .configure(|cfg| auth_framework.configure_routes(cfg))
 //!     })
 //!     .bind("127.0.0.1:8080")?
@@ -81,17 +66,11 @@ pub mod errors;
 pub mod middleware;
 pub mod routes;
 /// Authentication strategy trait and implementations.
-pub mod strategy;
+pub mod strategies;
 /// Core type definitions for authentication.
 pub mod types;
 /// User store trait and implementations.
 pub mod user_store;
-
-#[cfg(feature = "password")]
-pub mod password;
-
-#[cfg(feature = "oauth")]
-pub mod oauth;
 
 /// Convenient re-exports of commonly used types.
 ///
@@ -109,20 +88,20 @@ pub mod prelude;
 
 pub use crate::builder::{ActixPassport, ActixPassportBuilder};
 pub use crate::middleware::*;
-pub use crate::strategy::AuthStrategy;
+pub use crate::strategies::AuthStrategy;
 pub use crate::types::*;
 
 #[cfg(feature = "password")]
-pub use crate::password::{service::PasswordAuthService, LoginCredentials, RegisterCredentials};
+pub use crate::strategies::password::service::{LoginCredentials, RegisterCredentials};
 
 #[cfg(feature = "oauth")]
-pub use crate::oauth::{
-    providers::{
+pub use crate::strategies::oauth::{
+    provider::providers::{
         generic_provider::GenericOAuthProvider, github_provider::GitHubOAuthProvider,
         google_provider::GoogleOAuthProvider,
     },
+    provider::{OAuthConfig, OAuthProvider, OAuthUser},
     service::OAuthService,
-    OAuthConfig, OAuthProvider, OAuthUser,
 };
 
 // Re-export database stores

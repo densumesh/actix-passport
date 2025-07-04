@@ -4,13 +4,18 @@
 //! for extensible authentication methods. Each strategy can define its own
 //! authentication logic, routes, and middleware behavior.
 
-/// Strategies for authenticiation i.e. Password Auth, OAuth, etc
-pub mod strategies;
-
 use crate::types::AuthUser;
 use actix_web::HttpRequest;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
+
+/// Strategy for OAuth Auth
+#[cfg(feature = "oauth")]
+pub mod oauth;
+
+/// Strategy for Password Auth
+#[cfg(feature = "password")]
+pub mod password;
 
 /// Trait for implementing authentication strategies.
 ///
@@ -22,7 +27,7 @@ use dyn_clone::DynClone;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use actix_passport::strategy::AuthStrategy;
+/// use actix_passport::strategies::AuthStrategy;
 /// use actix_passport::types::AuthUser;
 /// use actix_web::HttpRequest;
 /// use async_trait::async_trait;

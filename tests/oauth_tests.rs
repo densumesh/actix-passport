@@ -6,7 +6,7 @@
 )]
 
 use actix_passport::{
-    prelude::InMemoryUserStore, strategy::strategies::oauth::OAuthStrategy, ActixPassport,
+    prelude::InMemoryUserStore, strategies::oauth::OAuthStrategy, ActixPassport,
     ActixPassportBuilder, AuthedUser, GenericOAuthProvider, GitHubOAuthProvider,
     GoogleOAuthProvider, OAuthConfig, OAuthProvider,
 };
@@ -45,28 +45,10 @@ async fn protected_route(user: AuthedUser) -> Result<HttpResponse> {
     })))
 }
 
-fn build_oauth_framework_with_google() -> ActixPassport {
+fn build_oauth_framework(providers: Vec<Box<dyn OAuthProvider>>) -> ActixPassport {
     let in_memory_user_store = InMemoryUserStore::new();
-    let google_provider = GoogleOAuthProvider::new(
-        "test_google_client_id".to_string(),
-        "test_google_client_secret".to_string(),
-    );
-    let oauth_strategy =
-        OAuthStrategy::new(in_memory_user_store.clone()).with_provider(google_provider);
 
-    ActixPassportBuilder::new(in_memory_user_store)
-        .add_strategy(oauth_strategy)
-        .build()
-}
-
-fn build_oauth_framework_with_github() -> ActixPassport {
-    let in_memory_user_store = InMemoryUserStore::new();
-    let github_provider = GitHubOAuthProvider::new(
-        "test_github_client_id".to_string(),
-        "test_github_client_secret".to_string(),
-    );
-    let oauth_strategy =
-        OAuthStrategy::new(in_memory_user_store.clone()).with_provider(github_provider);
+    let oauth_strategy = OAuthStrategy::new(providers);
 
     ActixPassportBuilder::new(in_memory_user_store)
         .add_strategy(oauth_strategy)
@@ -114,7 +96,11 @@ mod oauth_tests {
 
     #[actix_web::test]
     async fn test_google_oauth_authorization_url() {
-        let auth_framework = build_oauth_framework_with_google();
+        let google_provider = GoogleOAuthProvider::new(
+            "test_google_client_id".to_string(),
+            "test_google_secret_id".to_string(),
+        );
+        let auth_framework = build_oauth_framework(vec![Box::new(google_provider)]);
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -148,7 +134,11 @@ mod oauth_tests {
 
     #[actix_web::test]
     async fn test_github_oauth_authorization_url() {
-        let auth_framework = build_oauth_framework_with_github();
+        let github_provider = GitHubOAuthProvider::new(
+            "test_github_client_id".to_string(),
+            "test_github_secret_id".to_string(),
+        );
+        let auth_framework = build_oauth_framework(vec![Box::new(github_provider)]);
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -176,7 +166,11 @@ mod oauth_tests {
 
     #[actix_web::test]
     async fn test_oauth_authorization_url_includes_state() {
-        let auth_framework = build_oauth_framework_with_google();
+        let google_provider = GoogleOAuthProvider::new(
+            "test_google_client_id".to_string(),
+            "test_google_secret_id".to_string(),
+        );
+        let auth_framework = build_oauth_framework(vec![Box::new(google_provider)]);
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -195,7 +189,11 @@ mod oauth_tests {
 
     #[actix_web::test]
     async fn test_oauth_callback_without_code() {
-        let auth_framework = build_oauth_framework_with_google();
+        let google_provider = GoogleOAuthProvider::new(
+            "test_google_client_id".to_string(),
+            "test_google_secret_id".to_string(),
+        );
+        let auth_framework = build_oauth_framework(vec![Box::new(google_provider)]);
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -213,7 +211,11 @@ mod oauth_tests {
 
     #[actix_web::test]
     async fn test_oauth_callback_with_error() {
-        let auth_framework = build_oauth_framework_with_google();
+        let google_provider = GoogleOAuthProvider::new(
+            "test_google_client_id".to_string(),
+            "test_google_secret_id".to_string(),
+        );
+        let auth_framework = build_oauth_framework(vec![Box::new(google_provider)]);
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -250,18 +252,13 @@ mod oauth_tests {
 
     #[actix_web::test]
     async fn test_multiple_oauth_providers() {
-        let in_memory_user_store = InMemoryUserStore::new();
         let google_provider =
             GoogleOAuthProvider::new("google_client_id".to_string(), "google_secret".to_string());
         let github_provider =
             GitHubOAuthProvider::new("github_client_id".to_string(), "github_secret".to_string());
-        let oauth_strategy = OAuthStrategy::new(in_memory_user_store.clone())
-            .with_provider(google_provider)
-            .with_provider(github_provider);
 
-        let auth_framework = ActixPassportBuilder::new(in_memory_user_store)
-            .add_strategy(oauth_strategy)
-            .build();
+        let auth_framework =
+            build_oauth_framework(vec![Box::new(github_provider), Box::new(google_provider)]);
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -284,7 +281,11 @@ mod oauth_tests {
 
     #[actix_web::test]
     async fn test_oauth_authorization_url_includes_redirect_uri() {
-        let auth_framework = build_oauth_framework_with_google();
+        let google_provider = GoogleOAuthProvider::new(
+            "test_google_client_id".to_string(),
+            "test_google_secret_id".to_string(),
+        );
+        let auth_framework = build_oauth_framework(vec![Box::new(google_provider)]);
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -313,7 +314,11 @@ mod oauth_tests {
 
     #[actix_web::test]
     async fn test_oauth_scopes_included_in_authorization_url() {
-        let auth_framework = build_oauth_framework_with_google();
+        let google_provider = GoogleOAuthProvider::new(
+            "test_google_client_id".to_string(),
+            "test_google_secret_id".to_string(),
+        );
+        let auth_framework = build_oauth_framework(vec![Box::new(google_provider)]);
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -345,12 +350,7 @@ mod oauth_tests {
 
         let custom_provider = GenericOAuthProvider::new("custom", config);
 
-        let in_memory_user_store = InMemoryUserStore::new();
-        let oauth_strategy =
-            OAuthStrategy::new(in_memory_user_store.clone()).with_provider(custom_provider);
-        let auth_framework = ActixPassportBuilder::new(in_memory_user_store)
-            .add_strategy(oauth_strategy)
-            .build();
+        let auth_framework = build_oauth_framework(vec![Box::new(custom_provider)]);
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -374,7 +374,11 @@ mod oauth_tests {
 
     #[actix_web::test]
     async fn test_oauth_session_state_persistence() {
-        let auth_framework = build_oauth_framework_with_google();
+        let google_provider = GoogleOAuthProvider::new(
+            "test_google_client_id".to_string(),
+            "test_google_secret_id".to_string(),
+        );
+        let auth_framework = build_oauth_framework(vec![Box::new(google_provider)]);
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
@@ -407,7 +411,11 @@ mod oauth_tests {
 
     #[actix_web::test]
     async fn test_oauth_callback_invalid_state() {
-        let auth_framework = build_oauth_framework_with_google();
+        let google_provider = GoogleOAuthProvider::new(
+            "test_google_client_id".to_string(),
+            "test_google_secret_id".to_string(),
+        );
+        let auth_framework = build_oauth_framework(vec![Box::new(google_provider)]);
 
         let app = actix_web::test::init_service(create_oauth_test_app(auth_framework)).await;
 
