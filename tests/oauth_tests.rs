@@ -9,7 +9,7 @@ use actix_passport::{
     oauth_provider::providers::GenericOAuthProvider,
     oauth_provider::providers::GitHubOAuthProvider, oauth_provider::providers::GoogleOAuthProvider,
     oauth_provider::OAuthConfig, oauth_provider::OAuthProvider, strategies::OAuthStrategy,
-    ActixPassport, ActixPassportBuilder, AuthedUser, InMemoryUserStore,
+    ActixPassport, ActixPassportBuilder, AuthedUser, InMemoryUserStore, RouteConfig,
 };
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{web, App, HttpResponse, Result};
@@ -35,7 +35,7 @@ fn create_oauth_test_app(
             .cookie_secure(false)
             .build(),
         )
-        .configure(|cfg| auth_framework.configure_routes(cfg))
+        .configure(|cfg| auth_framework.configure_routes(cfg, RouteConfig::default()))
         .route("/protected", web::get().to(protected_route))
 }
 

@@ -1,5 +1,6 @@
 use crate::types::{AuthResult, AuthUser};
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use dyn_clone::DynClone;
 
 /// User store implementations.

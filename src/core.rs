@@ -51,6 +51,27 @@ pub struct ActixPassport {
     pub strategies: Vec<Box<dyn AuthStrategy>>,
 }
 
+/// Configuration for the authentication routes.
+///
+/// This struct is used to configure the authentication routes for the application.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use actix_passport::RouteConfig;
+///
+/// let config = RouteConfig {
+///     prefix: Some("/auth".to_string()),
+/// };
+/// ```
+#[derive(Default, Clone, Debug)]
+pub struct RouteConfig {
+    /// The prefix for the authentication routes.
+    ///
+    /// If `None`, the routes will be added to the `/auth` scope.
+    pub prefix: Option<String>,
+}
+
 impl ActixPassport {
     /// Configures the authentication routes for the application.
     ///
@@ -71,9 +92,9 @@ impl ActixPassport {
     /// # Arguments
     ///
     /// * `cfg` - The service config to add the routes to.
-    pub fn configure_routes(&self, cfg: &mut web::ServiceConfig) {
+    pub fn configure_routes(&self, cfg: &mut web::ServiceConfig, config: RouteConfig) {
         cfg.app_data(web::Data::new(self.clone()));
-        let mut auth_scope = web::scope("/auth");
+        let mut auth_scope = web::scope(config.prefix.as_deref().unwrap_or("/auth"));
 
         for strategy in &self.strategies {
             auth_scope = strategy.configure(auth_scope);

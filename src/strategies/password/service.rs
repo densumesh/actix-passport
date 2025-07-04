@@ -30,8 +30,10 @@ use serde_json;
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoginCredentials {
-    /// Email address or username
-    pub identifier: String,
+    /// Email address
+    pub email: Option<String>,
+    /// Username
+    pub username: Option<String>,
     /// Plain text password
     pub password: String,
 }
@@ -103,26 +105,27 @@ pub async fn login(
     credentials: LoginCredentials,
 ) -> AuthResult<AuthUser> {
     // Try to find user by email first, then by username
-    let user = if credentials.identifier.contains('@') {
-        user_store.find_by_email(&credentials.identifier).await?
+    let user = if let Some(email) = credentials.email {
+        user_store.find_by_email(&email).await?
+    } else if let Some(username) = credentials.username {
+        user_store.find_by_username(&username).await?
     } else {
-        user_store.find_by_username(&credentials.identifier).await?
+        return Err(AuthError::invalid_credentials("email or username"));
     };
 
-    let user =
-        user.ok_or_else(|| AuthError::user_not_found("identifier", &credentials.identifier))?;
+    let user = user.ok_or_else(|| AuthError::user_not_found("email or username", ""))?;
 
     // For this example, we assume password hash is stored in metadata
     let stored_hash = user
         .metadata
         .get("password_hash")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| AuthError::invalid_credentials(&credentials.identifier))?;
+        .ok_or_else(|| AuthError::invalid_credentials("email or username"))?;
 
     let is_valid = verify_password(&credentials.password, stored_hash)?;
 
     if !is_valid {
-        return Err(AuthError::invalid_credentials(&credentials.identifier));
+        return Err(AuthError::invalid_credentials("email or username"));
     }
 
     Ok(user)

@@ -10,7 +10,7 @@ use std::pin::Pin;
 use actix_http::Request;
 use actix_passport::{
     strategies::password::PasswordStrategy, ActixPassport, ActixPassportBuilder, AuthedUser,
-    InMemoryUserStore,
+    InMemoryUserStore, RouteConfig,
 };
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{
@@ -44,7 +44,7 @@ fn create_password_test_app(
             .cookie_secure(false)
             .build(),
         )
-        .configure(|cfg| auth_framework.configure_routes(cfg))
+        .configure(|cfg| auth_framework.configure_routes(cfg, RouteConfig::default()))
         .route("/protected", web::get().to(protected_route))
         .route("/admin", web::get().to(admin_route))
 }

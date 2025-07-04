@@ -72,6 +72,20 @@ pub mod types;
 /// User store trait and implementations.
 pub mod user_store;
 
+/// Convenient re-exports of commonly used types.
+///
+/// This module provides a simple way to import all the types you'll commonly
+/// need when working with actix-passport.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use actix_passport::prelude::*;
+///
+/// // All commonly used types are now available
+/// ```
+pub mod prelude;
+
 pub use crate::builder::ActixPassportBuilder;
 pub use crate::core::*;
 pub use crate::errors::AuthError;
