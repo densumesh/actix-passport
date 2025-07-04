@@ -6,9 +6,10 @@
 )]
 
 use actix_passport::{
-    prelude::InMemoryUserStore, strategies::oauth::OAuthStrategy, ActixPassport,
-    ActixPassportBuilder, AuthedUser, GenericOAuthProvider, GitHubOAuthProvider,
-    GoogleOAuthProvider, OAuthConfig, OAuthProvider,
+    oauth_provider::providers::GenericOAuthProvider,
+    oauth_provider::providers::GitHubOAuthProvider, oauth_provider::providers::GoogleOAuthProvider,
+    oauth_provider::OAuthConfig, oauth_provider::OAuthProvider, strategies::OAuthStrategy,
+    ActixPassport, ActixPassportBuilder, AuthedUser, InMemoryUserStore,
 };
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{web, App, HttpResponse, Result};

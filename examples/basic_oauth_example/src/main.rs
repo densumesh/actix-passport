@@ -1,5 +1,8 @@
 use actix_files::Files;
-use actix_passport::prelude::*;
+use actix_passport::{
+    oauth_provider::providers::{GitHubOAuthProvider, GoogleOAuthProvider},
+    ActixPassportBuilder, AuthedUser, InMemoryUserStore,
+};
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{cookie::Key, web, App, HttpResponse, HttpServer};
 

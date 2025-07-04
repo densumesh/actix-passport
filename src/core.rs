@@ -1,18 +1,87 @@
-//! Authentication middleware for actix-web.
-//!
-//! This module provides middleware for handling authentication in actix-web applications.
-//! It includes session-based authentication, JWT token validation, and user identity injection.
+use std::ops::Deref;
 
-use crate::{types::AuthUser, ActixPassport};
 use actix_web::{
     error::{ErrorBadRequest, ErrorUnauthorized},
     web, FromRequest, HttpMessage, HttpRequest,
 };
-use futures_util::future::{FutureExt, LocalBoxFuture};
-use std::{
-    future::{ready, Ready},
-    ops::Deref,
+use futures_util::{
+    future::{ready, LocalBoxFuture, Ready},
+    FutureExt,
 };
+
+use crate::{AuthStrategy, AuthUser, UserStore};
+
+/// The main authentication framework object.
+///
+/// This struct is created by the `ActixPassportBuilder` and holds all the
+/// configured services and stores. It is intended to be cloned and stored
+/// in the actix-web application data.
+///
+/// # Type Parameters
+///
+/// * `U` - The user store implementation that handles user persistence
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use actix_passport::{ActixPassportBuilder, user_store::UserStore, prelude::PasswordStrategy};
+/// # use actix_passport::types::{AuthResult, AuthUser};
+/// # use async_trait::async_trait;
+/// # #[derive(Clone)] struct MyUserStore;
+/// # #[async_trait]
+/// # impl UserStore for MyUserStore {
+/// #   async fn find_by_id(&self, id: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+/// #   async fn find_by_email(&self, email: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+/// #   async fn find_by_username(&self, username: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
+/// #   async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+/// #   async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
+/// #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
+/// # }
+///
+/// let password_strategy = PasswordStrategy::new();
+/// let auth_framework = ActixPassportBuilder::new(MyUserStore)
+///     .add_strategy(password_strategy)
+///     .build();
+/// ```
+#[derive(Clone)]
+pub struct ActixPassport {
+    /// The user store implementation for persisting user data
+    pub user_store: Box<dyn UserStore>,
+    /// Registered authentication strategies
+    pub strategies: Vec<Box<dyn AuthStrategy>>,
+}
+
+impl ActixPassport {
+    /// Configures the authentication routes for the application.
+    ///
+    /// This function adds the following routes to the specified service config:
+    ///
+    /// ## Password Authentication
+    /// - `POST /auth/register`
+    /// - `POST /auth/login`
+    /// - `POST /auth/logout`
+    ///
+    /// ## OAuth Authentication
+    /// - `GET /auth/{provider}`
+    /// - `GET /auth/{provider}/callback`
+    ///
+    /// ## User Information
+    /// - `GET /auth/me`
+    ///
+    /// # Arguments
+    ///
+    /// * `cfg` - The service config to add the routes to.
+    pub fn configure_routes(&self, cfg: &mut web::ServiceConfig) {
+        cfg.app_data(web::Data::new(self.clone()));
+        let mut auth_scope = web::scope("/auth");
+
+        for strategy in &self.strategies {
+            auth_scope = strategy.configure(auth_scope);
+        }
+
+        cfg.service(auth_scope);
+    }
+}
 
 /// Extractable authenticated user from request.
 ///

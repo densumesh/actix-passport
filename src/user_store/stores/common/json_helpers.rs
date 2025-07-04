@@ -1,6 +1,6 @@
 //! JSON serialization helpers for user metadata and OAuth providers.
 
-use crate::{types::AuthUser, OAuthUser};
+use crate::{oauth_provider::OAuthUser, types::AuthUser};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 

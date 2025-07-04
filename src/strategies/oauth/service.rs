@@ -2,10 +2,9 @@ use std::collections::HashMap;
 
 use crate::{
     errors::AuthError,
-    prelude::UserStore,
-    strategies::oauth::{provider::OAuthUser, OAuthProvider},
+    strategies::oauth::{oauth_provider::OAuthUser, OAuthProvider},
     types::AuthResult,
-    AuthUser,
+    AuthUser, UserStore,
 };
 
 /// OAuth service for managing multiple OAuth providers.
@@ -78,19 +77,6 @@ impl OAuthService {
     #[must_use]
     pub fn get_provider(&self, name: &str) -> Option<&dyn OAuthProvider> {
         self.providers.get(name).map(std::convert::AsRef::as_ref)
-    }
-
-    /// Lists all available provider names.
-    ///
-    /// # Returns
-    ///
-    /// Returns a vector of provider names.
-    #[must_use]
-    pub fn list_providers(&self) -> Vec<&str> {
-        self.providers
-            .keys()
-            .map(std::string::String::as_str)
-            .collect()
     }
 
     /// Generates an authorization URL for a specific provider.

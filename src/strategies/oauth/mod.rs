@@ -1,7 +1,7 @@
 //! OAuth authentication strategy implementation.
 
 use crate::{
-    strategies::oauth::{provider::OAuthProvider, service::OAuthService},
+    strategies::oauth::{oauth_provider::OAuthProvider, service::OAuthService},
     strategies::AuthStrategy,
     types::AuthUser,
     ActixPassport, USER_ID_KEY,
@@ -14,7 +14,7 @@ use actix_web::{
 use async_trait::async_trait;
 use std::sync::Arc;
 
-pub mod provider;
+pub mod oauth_provider;
 pub(crate) mod routes;
 pub(crate) mod service;
 

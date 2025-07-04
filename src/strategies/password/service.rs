@@ -1,7 +1,7 @@
 use crate::{
     errors::AuthError,
-    prelude::UserStore,
     types::{AuthResult, AuthUser},
+    UserStore,
 };
 
 use argon2::{

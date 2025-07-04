@@ -1,52 +1,13 @@
 //! Builder for constructing the main authentication framework.
 
 #[cfg(feature = "oauth")]
-use crate::OAuthProvider;
+use crate::oauth_provider::OAuthProvider;
 use crate::{
-    prelude::UserStore, strategies::AuthStrategy, user_store::stores::in_memory::InMemoryUserStore,
+    strategies::AuthStrategy, user_store::stores::in_memory::InMemoryUserStore, ActixPassport,
+    UserStore,
 };
 #[cfg(feature = "postgres")]
 use crate::{PostgresConfig, PostgresUserStore};
-
-/// The main authentication framework object.
-///
-/// This struct is created by the `ActixPassportBuilder` and holds all the
-/// configured services and stores. It is intended to be cloned and stored
-/// in the actix-web application data.
-///
-/// # Type Parameters
-///
-/// * `U` - The user store implementation that handles user persistence
-///
-/// # Examples
-///
-/// ```rust,no_run
-/// use actix_passport::{ActixPassportBuilder, user_store::UserStore, prelude::PasswordStrategy};
-/// # use actix_passport::types::{AuthResult, AuthUser};
-/// # use async_trait::async_trait;
-/// # #[derive(Clone)] struct MyUserStore;
-/// # #[async_trait]
-/// # impl UserStore for MyUserStore {
-/// #   async fn find_by_id(&self, id: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
-/// #   async fn find_by_email(&self, email: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
-/// #   async fn find_by_username(&self, username: &str) -> AuthResult<Option<AuthUser>> { Ok(None) }
-/// #   async fn create_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
-/// #   async fn update_user(&self, user: AuthUser) -> AuthResult<AuthUser> { Ok(user) }
-/// #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
-/// # }
-///
-/// let password_strategy = PasswordStrategy::new();
-/// let auth_framework = ActixPassportBuilder::new(MyUserStore)
-///     .add_strategy(password_strategy)
-///     .build();
-/// ```
-#[derive(Clone)]
-pub struct ActixPassport {
-    /// The user store implementation for persisting user data
-    pub user_store: Box<dyn UserStore>,
-    /// Registered authentication strategies
-    pub strategies: Vec<Box<dyn AuthStrategy>>,
-}
 
 /// Builder for configuring and creating an `ActixPassport`.
 ///
@@ -169,7 +130,7 @@ where
     #[cfg(feature = "password")]
     #[must_use]
     pub fn enable_password_auth(mut self) -> Self {
-        use crate::prelude::PasswordStrategy;
+        use crate::strategies::password::PasswordStrategy;
 
         let strategy = PasswordStrategy::new();
         self.strategies.push(Box::new(strategy));

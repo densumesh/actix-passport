@@ -9,8 +9,8 @@ use std::pin::Pin;
 
 use actix_http::Request;
 use actix_passport::{
-    prelude::InMemoryUserStore, strategies::password::PasswordStrategy, ActixPassport,
-    ActixPassportBuilder, AuthedUser,
+    strategies::password::PasswordStrategy, ActixPassport, ActixPassportBuilder, AuthedUser,
+    InMemoryUserStore,
 };
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{

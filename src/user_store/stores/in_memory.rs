@@ -7,8 +7,8 @@ use async_trait::async_trait;
 
 use crate::{
     errors::AuthError,
-    prelude::UserStore,
     types::{AuthResult, AuthUser},
+    UserStore,
 };
 
 /// In-memory user store implementation for development and testing.

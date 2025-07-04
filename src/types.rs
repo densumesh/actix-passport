@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::{errors::AuthError, OAuthUser};
+use crate::{errors::AuthError, oauth_provider::OAuthUser};
 
 pub(crate) const USER_ID_KEY: &str = "actix_passport_user_id";
 

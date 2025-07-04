@@ -61,49 +61,27 @@
 
 pub mod builder;
 
+/// Core Passport types and functions.
+pub mod core;
 /// Authentication error types.
 pub mod errors;
-pub mod middleware;
-pub mod routes;
 /// Authentication strategy trait and implementations.
 pub mod strategies;
-/// Core type definitions for authentication.
+/// Type definitions for authentication.
 pub mod types;
 /// User store trait and implementations.
 pub mod user_store;
 
-/// Convenient re-exports of commonly used types.
-///
-/// This module provides a simple way to import all the types you'll commonly
-/// need when working with actix-passport.
-///
-/// # Examples
-///
-/// ```rust,no_run
-/// use actix_passport::prelude::*;
-///
-/// // All commonly used types are now available
-/// ```
-pub mod prelude;
-
-pub use crate::builder::{ActixPassport, ActixPassportBuilder};
-pub use crate::middleware::*;
+pub use crate::builder::ActixPassportBuilder;
+pub use crate::core::*;
+pub use crate::errors::AuthError;
 pub use crate::strategies::AuthStrategy;
 pub use crate::types::*;
 
-#[cfg(feature = "password")]
-pub use crate::strategies::password::service::{LoginCredentials, RegisterCredentials};
-
 #[cfg(feature = "oauth")]
-pub use crate::strategies::oauth::{
-    provider::providers::{
-        generic_provider::GenericOAuthProvider, github_provider::GitHubOAuthProvider,
-        google_provider::GoogleOAuthProvider,
-    },
-    provider::{OAuthConfig, OAuthProvider, OAuthUser},
-    service::OAuthService,
-};
+pub use crate::strategies::oauth::oauth_provider;
 
 // Re-export database stores
 #[cfg(feature = "postgres")]
 pub use crate::user_store::stores::postgres::{PostgresConfig, PostgresUserStore};
+pub use crate::user_store::{stores::in_memory::InMemoryUserStore, UserStore};

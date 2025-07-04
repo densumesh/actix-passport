@@ -12,10 +12,14 @@ use dyn_clone::DynClone;
 /// Strategy for OAuth Auth
 #[cfg(feature = "oauth")]
 pub mod oauth;
+#[cfg(feature = "oauth")]
+pub use oauth::OAuthStrategy;
 
 /// Strategy for Password Auth
 #[cfg(feature = "password")]
 pub mod password;
+#[cfg(feature = "password")]
+pub use password::PasswordStrategy;
 
 /// Trait for implementing authentication strategies.
 ///
