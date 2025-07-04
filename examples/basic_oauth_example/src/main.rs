@@ -1,8 +1,5 @@
 use actix_files::Files;
-use actix_passport::{
-    oauth_provider::providers::{GitHubOAuthProvider, GoogleOAuthProvider},
-    ActixPassportBuilder, AuthedUser, InMemoryUserStore,
-};
+use actix_passport::prelude::*;
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{cookie::Key, web, App, HttpResponse, HttpServer};
 
@@ -52,7 +49,7 @@ async fn main() -> std::io::Result<()> {
                 .build(),
             )
             // Configure OAuth routes
-            .configure(|cfg| auth_framework.configure_routes(cfg))
+            .configure(|cfg| auth_framework.configure_routes(cfg, RouteConfig::default()))
             .route("/api/user", web::get().to(hello_world))
             // Serve static files (frontend)
             .service(Files::new("/", "static").index_file("index.html"))

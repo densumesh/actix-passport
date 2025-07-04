@@ -1,5 +1,5 @@
 use actix_files::Files;
-use actix_passport::{ActixPassportBuilder, AuthedUser, PostgresUserStore};
+use actix_passport::prelude::*;
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{
     cookie::Key, middleware::Logger, web, App, HttpResponse, HttpServer, Responder, Result,
@@ -55,8 +55,8 @@ async fn main() -> std::io::Result<()> {
                 CookieSessionStore::default(),
                 Key::generate(),
             ))
+            .configure(|cfg| auth_framework.configure_routes(cfg, RouteConfig::default()))
             .route("/api/user", web::get().to(user_info))
-            .configure(|cfg| auth_framework.configure_routes(cfg))
             .service(Files::new("/", "static").index_file("index.html"))
     })
     .bind("127.0.0.1:8080")?

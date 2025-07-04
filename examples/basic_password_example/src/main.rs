@@ -1,5 +1,5 @@
 use actix_files::Files;
-use actix_passport::{ActixPassportBuilder, AuthedUser};
+use actix_passport::prelude::*;
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{cookie::Key, web, App, HttpResponse, HttpServer, Responder, Result};
 
@@ -41,7 +41,7 @@ async fn main() -> std::io::Result<()> {
                 .cookie_secure(false)
                 .build(), // For local HTTP testing
             )
-            .configure(|cfg| auth_framework.configure_routes(cfg))
+            .configure(|cfg| auth_framework.configure_routes(cfg, RouteConfig::default()))
             .route("/api/user", web::get().to(user_info))
             .service(Files::new("/", "static").index_file("index.html"))
     })
