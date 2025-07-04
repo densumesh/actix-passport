@@ -78,6 +78,8 @@ pub mod builder;
 pub mod errors;
 pub mod middleware;
 pub mod routes;
+/// Authentication strategy trait and implementations.
+pub mod strategy;
 /// Core type definitions for authentication.
 pub mod types;
 /// User store trait and implementations.
@@ -105,6 +107,7 @@ pub mod prelude;
 
 pub use crate::builder::{ActixPassport, ActixPassportBuilder};
 pub use crate::middleware::*;
+pub use crate::strategy::AuthStrategy;
 pub use crate::types::*;
 
 #[cfg(feature = "password")]
@@ -122,4 +125,4 @@ pub use crate::oauth::{
 
 // Re-export database stores
 #[cfg(feature = "postgres")]
-pub use crate::user_store::stores::postgres::{PostgresUserStore, PostgresConfig};
+pub use crate::user_store::stores::postgres::{PostgresConfig, PostgresUserStore};

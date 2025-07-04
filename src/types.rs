@@ -4,6 +4,8 @@ use std::collections::HashMap;
 
 use crate::{errors::AuthError, OAuthUser};
 
+pub(crate) const USER_ID_KEY: &str = "actix_passport_user_id";
+
 /// Represents an authenticated user in the system.
 ///
 /// This is the core user type that gets injected into request handlers
@@ -271,15 +273,3 @@ impl AuthUser {
 ///
 /// This is a convenience type that represents a `Result` with `AuthError` as the error type.
 pub type AuthResult<T> = Result<T, AuthError>;
-
-/// Configuration for the authentication system.
-///
-/// This struct contains all the configuration options for the authentication system,
-/// including session settings, JWT configuration, and security options.
-#[derive(Debug, Clone, Default)]
-pub(crate) struct AuthConfig {
-    /// Whether password authentication is enabled
-    pub(crate) password_auth: bool,
-    /// Whether OAuth authentication is enabled
-    pub(crate) oauth_auth: bool,
-}

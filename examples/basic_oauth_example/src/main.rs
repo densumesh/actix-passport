@@ -1,5 +1,5 @@
 use actix_files::Files;
-use actix_passport::prelude::*;
+use actix_passport::{prelude::*, strategy::strategies::oauth::OAuthStrategy};
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{cookie::Key, web, App, HttpResponse, HttpServer};
 
@@ -25,14 +25,17 @@ async fn main() -> std::io::Result<()> {
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
+    let user_store = InMemoryUserStore::new();
     let google_provider = GoogleOAuthProvider::from_env();
     let github_provider = GitHubOAuthProvider::from_env();
 
+    let oauth_strategy = OAuthStrategy::new(user_store.clone())
+        .with_provider(google_provider)
+        .with_provider(github_provider);
+
     // Create the authentication framework with in-memory store and OAuth providers
-    let auth_framework = ActixPassportBuilder::with_in_memory_store()
-        .enable_password_auth()
-        .with_oauth(google_provider)
-        .with_oauth(github_provider)
+    let auth_framework = ActixPassportBuilder::new(user_store)
+        .add_strategy(oauth_strategy)
         .build();
 
     log::info!("Starting OAuth example server at http://127.0.0.1:8080");

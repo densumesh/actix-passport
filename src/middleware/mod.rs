@@ -3,12 +3,11 @@
 //! This module provides middleware for handling authentication in actix-web applications.
 //! It includes session-based authentication, JWT token validation, and user identity injection.
 
-/// Authentication middleware schemes for different authentication methods.
-pub mod schemes;
-
-use crate::middleware::schemes::get_user_from_request;
-use crate::types::AuthUser;
-use actix_web::{error::ErrorUnauthorized, FromRequest, HttpMessage, HttpRequest};
+use crate::{types::AuthUser, ActixPassport};
+use actix_web::{
+    error::{ErrorBadRequest, ErrorUnauthorized},
+    web, FromRequest, HttpMessage, HttpRequest,
+};
 use futures_util::future::{FutureExt, LocalBoxFuture};
 use std::{
     future::{ready, Ready},
@@ -48,10 +47,24 @@ impl FromRequest for AuthedUser {
 
     fn from_request(req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Self::Future {
         let req = req.clone();
+
         async move {
-            get_user_from_request(&req).await.map_or_else(
-                || Err(ErrorUnauthorized("Authentication required")),
-                |user| Ok(Self(user)),
+            let framework = req.app_data::<web::Data<ActixPassport>>().map_or_else(
+                ||
+                Err(ErrorBadRequest(
+                    "Could not extract `ActixPassport` from the app data. This usually means that you have not added 
+                        `.configure(|cfg| auth_framework.configure_routes(cfg))` or `.app_data(auth_framework)` prior to 
+                        defining your routes. ")), 
+                Ok)?;
+            let mut user = None;
+            for strategy in &framework.strategies {
+                user = strategy.authenticate(&req).await;
+            }
+
+            user.map_or_else(
+                || Err(ErrorUnauthorized("Unauthorized"))
+                ,
+            |user| Ok(Self(user))
             )
         }
         .boxed_local()

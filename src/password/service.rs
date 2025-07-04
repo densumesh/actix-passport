@@ -51,8 +51,10 @@ impl PasswordAuthService {
     ///
     /// * `user_store` - The user store implementation
     #[must_use]
-    pub const fn new(user_store: Box<dyn UserStore>) -> Self {
-        Self { user_store }
+    pub fn new(user_store: impl UserStore + 'static) -> Self {
+        Self {
+            user_store: Box::new(user_store),
+        }
     }
 
     /// Hashes a password using Argon2.

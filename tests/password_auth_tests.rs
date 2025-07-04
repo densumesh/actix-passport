@@ -8,7 +8,10 @@
 use std::pin::Pin;
 
 use actix_http::Request;
-use actix_passport::{ActixPassport, ActixPassportBuilder, AuthedUser};
+use actix_passport::{
+    prelude::InMemoryUserStore, strategy::strategies::password::PasswordStrategy, ActixPassport,
+    ActixPassportBuilder, AuthedUser,
+};
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{
     cookie::Cookie,
@@ -113,15 +116,22 @@ where
     }
 }
 
+fn build_password_auth_framework() -> ActixPassport {
+    let in_memory_user_store = InMemoryUserStore::new();
+    let password_strategy = PasswordStrategy::new(in_memory_user_store.clone());
+
+    ActixPassportBuilder::new(in_memory_user_store)
+        .add_strategy(password_strategy)
+        .build()
+}
+
 #[cfg(test)]
 mod password_tests {
     use super::*;
 
     #[actix_web::test]
     async fn test_user_registration_success() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .enable_password_auth()
-            .build();
+        let auth_framework = build_password_auth_framework();
 
         let app = actix_web::test::init_service(create_password_test_app(auth_framework)).await;
 
@@ -146,9 +156,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_registration_duplicate_email() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .enable_password_auth()
-            .build();
+        let auth_framework = build_password_auth_framework();
 
         let app = actix_web::test::init_service(create_password_test_app(auth_framework)).await;
 
@@ -166,9 +174,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_registration_duplicate_username() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .enable_password_auth()
-            .build();
+        let auth_framework = build_password_auth_framework();
 
         let app = actix_web::test::init_service(create_password_test_app(auth_framework)).await;
 
@@ -186,9 +192,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_registration_weak_password() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .enable_password_auth()
-            .build();
+        let auth_framework = build_password_auth_framework();
 
         let app = actix_web::test::init_service(create_password_test_app(auth_framework)).await;
 
@@ -200,9 +204,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_registration_invalid_email() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .enable_password_auth()
-            .build();
+        let auth_framework = build_password_auth_framework();
 
         let app = actix_web::test::init_service(create_password_test_app(auth_framework)).await;
 
@@ -214,9 +216,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_login_with_email() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .enable_password_auth()
-            .build();
+        let auth_framework = build_password_auth_framework();
 
         let app = actix_web::test::init_service(create_password_test_app(auth_framework)).await;
 
@@ -231,9 +231,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_login_with_username() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .enable_password_auth()
-            .build();
+        let auth_framework = build_password_auth_framework();
 
         let app = actix_web::test::init_service(create_password_test_app(auth_framework)).await;
 
@@ -248,9 +246,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_login_wrong_password() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .enable_password_auth()
-            .build();
+        let auth_framework = build_password_auth_framework();
 
         let app = actix_web::test::init_service(create_password_test_app(auth_framework)).await;
 
@@ -265,9 +261,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_login_nonexistent_user() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .enable_password_auth()
-            .build();
+        let auth_framework = build_password_auth_framework();
 
         let app = actix_web::test::init_service(create_password_test_app(auth_framework)).await;
 
@@ -278,9 +272,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_user_logout() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .enable_password_auth()
-            .build();
+        let auth_framework = build_password_auth_framework();
 
         let app = actix_web::test::init_service(create_password_test_app(auth_framework)).await;
 
@@ -326,9 +318,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_get_current_user() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .enable_password_auth()
-            .build();
+        let auth_framework = build_password_auth_framework();
 
         let app = actix_web::test::init_service(create_password_test_app(auth_framework)).await;
 
@@ -360,9 +350,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_protected_route_with_authentication() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .enable_password_auth()
-            .build();
+        let auth_framework = build_password_auth_framework();
 
         let app = actix_web::test::init_service(create_password_test_app(auth_framework)).await;
 
@@ -393,9 +381,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_protected_route_without_authentication() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .enable_password_auth()
-            .build();
+        let auth_framework = build_password_auth_framework();
 
         let app = actix_web::test::init_service(create_password_test_app(auth_framework)).await;
 
@@ -413,9 +399,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_multiple_users_isolation() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .enable_password_auth()
-            .build();
+        let auth_framework = build_password_auth_framework();
 
         let app = actix_web::test::init_service(create_password_test_app(auth_framework)).await;
 
@@ -458,9 +442,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_session_persistence_across_requests() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .enable_password_auth()
-            .build();
+        let auth_framework = build_password_auth_framework();
 
         let app = actix_web::test::init_service(create_password_test_app(auth_framework)).await;
 
@@ -490,9 +472,7 @@ mod password_tests {
 
     #[actix_web::test]
     async fn test_password_case_sensitivity() {
-        let auth_framework = ActixPassportBuilder::with_in_memory_store()
-            .enable_password_auth()
-            .build();
+        let auth_framework = build_password_auth_framework();
 
         let app = actix_web::test::init_service(create_password_test_app(auth_framework)).await;
 

@@ -1,7 +1,12 @@
 use actix_files::Files;
-use actix_passport::{ActixPassportBuilder, AuthedUser};
+use actix_passport::{
+    strategy::strategies::password::PasswordStrategy, ActixPassportBuilder, AuthedUser,
+    PostgresUserStore,
+};
 use actix_session::{storage::CookieSessionStore, SessionMiddleware};
-use actix_web::{cookie::Key, middleware::Logger, web, App, HttpResponse, HttpServer, Responder, Result};
+use actix_web::{
+    cookie::Key, middleware::Logger, web, App, HttpResponse, HttpServer, Responder, Result,
+};
 use dotenvy::dotenv;
 use env_logger::Env;
 use std::env;
@@ -32,10 +37,11 @@ async fn main() -> std::io::Result<()> {
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     // Configure authentication framework
-    let auth_framework = ActixPassportBuilder::with_postgres_store(&database_url)
-        .await
-        .unwrap()
-        .enable_password_auth()
+    let user_store = PostgresUserStore::new(&database_url).await.unwrap();
+    let password_strategy = PasswordStrategy::new(user_store.clone());
+
+    let auth_framework = ActixPassportBuilder::new(user_store)
+        .add_strategy(password_strategy)
         .build();
 
     println!("🚀 Starting server on http://localhost:8080");

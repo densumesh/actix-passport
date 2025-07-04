@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use crate::{
     errors::AuthError,
     oauth::{OAuthProvider, OAuthUser},
+    prelude::UserStore,
     types::AuthResult,
+    AuthUser,
 };
 
 /// OAuth service for managing multiple OAuth providers.
@@ -29,13 +31,15 @@ use crate::{
 #[derive(Clone)]
 pub struct OAuthService {
     providers: HashMap<String, Box<dyn OAuthProvider>>,
+    user_store: Box<dyn UserStore>,
 }
 
 impl OAuthService {
     /// Creates a new OAuth service.
     #[must_use]
-    pub fn new() -> Self {
+    pub fn new(user_store: impl UserStore + 'static) -> Self {
         Self {
+            user_store: Box::new(user_store),
             providers: HashMap::new(),
         }
     }
@@ -148,10 +152,52 @@ impl OAuthService {
 
         provider.exchange_code(code, redirect_uri).await
     }
-}
 
-impl Default for OAuthService {
-    fn default() -> Self {
-        Self::new()
+    /// Handles the OAuth callback by exchanging the authorization code for user information
+    /// and creating or updating the user account.
+    ///
+    /// # Arguments
+    ///
+    /// * `provider_name` - The name of the OAuth provider
+    /// * `code` - The authorization code from the provider
+    /// * `redirect_uri` - The redirect URI used in the authorization request
+    ///
+    /// # Returns
+    ///
+    /// Returns the authenticated user information.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the provider is not found, code exchange fails, or user operations fail.
+    pub async fn callback(
+        &self,
+        provider_name: &str,
+        code: &str,
+        redirect_uri: &str,
+    ) -> AuthResult<AuthUser> {
+        let oauth_user = self
+            .exchange_code(provider_name, code, redirect_uri)
+            .await?;
+
+        let user = match self
+            .user_store
+            .find_by_email(oauth_user.email.as_deref().unwrap_or_default())
+            .await
+        {
+            Ok(Some(mut existing_user)) => {
+                // User exists - add this OAuth provider to their account
+                existing_user = existing_user.with_oauth_provider(oauth_user);
+
+                // Update user with new OAuth provider
+                self.user_store.update_user(existing_user).await?
+            }
+            Ok(None) => {
+                // Create a new user with OAuth provider information
+                let new_user = AuthUser::from(oauth_user);
+                self.user_store.create_user(new_user).await?
+            }
+            Err(e) => return Err(e),
+        };
+        Ok(user)
     }
 }
