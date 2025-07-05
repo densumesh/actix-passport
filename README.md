@@ -75,7 +75,7 @@ async fn main() -> std::io::Result<()> {
             ).build())
             .service(home)
             .service(dashboard)
-            .configure(|cfg| auth_framework.configure_routes(cfg))
+            .configure(|cfg| auth_framework.configure_routes(cfg, RouteConfig::default()))
     })
     .bind("127.0.0.1:8080")?
     .run()
@@ -110,7 +110,7 @@ async fn main() -> std::io::Result<()> {
                 CookieSessionStore::default(),
                 Key::generate()
             ).build())
-            .configure(|cfg| auth_framework.configure_routes(cfg))
+            .configure(|cfg| auth_framework.configure_routes(cfg, RouteConfig::default()))
     })
     .bind("127.0.0.1:8080")?
     .run()
@@ -210,6 +210,8 @@ See the [`examples/`](examples/) directory for complete working examples:
 
 - [`basic_example/`](examples/basic_example/) - Basic password authentication
 - [`oauth_example/`](examples/oauth_example/) - OAuth with Google and GitHub
+- [`postgres_example/`](examples/postgres_example/) - Example with PostgreSQL user store
+- [`advanced_example/`](examples/advanced_example/) - Advanced example with SQLite and Bearer token authentication
 
 ## Feature Flags
 
@@ -223,15 +225,15 @@ actix-passport = { version = "0.1", features = ["password", "oauth"] }
 Available features:
 - `password` (default) - Username/password authentication
 - `oauth` (default) - OAuth 2.0 providers
+- `postgres` - PostgreSQL user store
 
 ## Architecture
 
 ### Core Components
 
 - **`UserStore`** - Interface for user persistence (database, file, etc.)
-- **`PasswordAuthService`** - Service for password authentication using Argon2 hashing
-- **`OAuthProvider`** - Interface for OAuth providers (Google, GitHub, custom)
 - **`ActixPassport`** - Main framework object containing all configured services
+- **`AuthStrategy`** - Interface for authentication strategies
 
 ### Extractors
 - **`AuthedUser`** - Requires authentication, returns user or 401
@@ -271,38 +273,6 @@ curl -X POST http://localhost:8080/auth/login \
 curl http://localhost:8080/dashboard \
   --cookie-jar cookies.txt --cookie cookies.txt
 ```
-
-### Database Integration
-
-For production use, implement stores with your database of choice:
-
-```rust
-// Example with SQLx and PostgreSQL
-use sqlx::PgPool;
-
-#[derive(Clone)]
-pub struct PostgresUserStore {
-    pool: PgPool,
-}
-
-#[async_trait]
-impl UserStore for PostgresUserStore {
-    async fn find_by_email(&self, email: &str) -> AuthResult<Option<AuthUser>> {
-        let user = sqlx::query_as!(
-            AuthUser,
-            "SELECT * FROM users WHERE email = $1",
-            email
-        )
-        .fetch_optional(&self.pool)
-        .await?;
-        
-        Ok(user)
-    }
-    
-    // ... implement other methods
-}
-```
-
 
 ## License
 
