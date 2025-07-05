@@ -17,7 +17,7 @@ use url::Url;
 /// # Examples
 ///
 /// ```rust,no_run
-/// use actix_passport::{GenericOAuthProvider, OAuthConfig};
+/// use actix_passport::oauth_provider::{OAuthConfig, providers::GenericOAuthProvider};
 ///
 /// let config = OAuthConfig::builder(
 ///     "your_client_id".to_string(),

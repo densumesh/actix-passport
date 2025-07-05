@@ -150,7 +150,7 @@ impl AuthUser {
     /// # Examples
     ///
     /// ```rust
-    /// use actix_passport::{AuthUser, OAuthUser};
+    /// use actix_passport::{AuthUser, oauth_provider::OAuthUser};
     /// use serde_json::json;
     ///
     /// let user = AuthUser::new("user123")
@@ -191,7 +191,7 @@ impl AuthUser {
     /// # Examples
     ///
     /// ```rust
-    /// use actix_passport::{AuthUser, OAuthUser};
+    /// use actix_passport::{AuthUser, oauth_provider::OAuthUser};
     /// use serde_json::json;
     ///
     /// let user = AuthUser::new("user123")
@@ -232,7 +232,7 @@ impl AuthUser {
     /// # Examples
     ///
     /// ```rust
-    /// use actix_passport::{AuthUser, OAuthUser};
+    /// use actix_passport::{AuthUser, oauth_provider::OAuthUser};
     /// use serde_json::json;
     ///
     /// let user = AuthUser::new("user123")

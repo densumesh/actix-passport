@@ -17,17 +17,6 @@ use serde_json;
 ///
 /// This struct represents the user's login credentials, supporting
 /// both email and username-based authentication.
-///
-/// # Examples
-///
-/// ```rust
-/// use actix_passport::LoginCredentials;
-///
-/// let creds = LoginCredentials {
-///     identifier: "user@example.com".to_string(),
-///     password: "secure_password".to_string(),
-/// };
-/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoginCredentials {
     /// Email address

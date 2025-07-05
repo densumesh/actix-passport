@@ -27,9 +27,6 @@ dyn-clone = "1.0.19"
 
 # Optional database dependencies
 sqlx = { version = "0.8", optional = true, default-features = false }
-mongodb = { version = "3.2", optional = true }
-redis = { version = "0.32", optional = true, default-features = false }
-bson = { version = "2.9", optional = true }
 
 [dev-dependencies]
 actix-http = "3.11"

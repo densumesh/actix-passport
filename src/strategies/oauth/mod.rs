@@ -27,7 +27,7 @@ pub(crate) mod service;
 ///
 /// ```rust,no_run
 /// use actix_passport::strategies::oauth::OAuthStrategy;
-/// use actix_passport::{ActixPassportBuilder, GoogleOAuthProvider, prelude::InMemoryUserStore};
+/// use actix_passport::{ActixPassportBuilder, oauth_provider::providers::GoogleOAuthProvider, prelude::InMemoryUserStore};
 ///
 /// let store = InMemoryUserStore::new();
 /// let provider = GoogleOAuthProvider::new("client_id".to_string(), "client_secret".to_string());

@@ -2,6 +2,16 @@
 //!
 //! A comprehensive, flexible authentication framework for [actix-web](https://actix.rs/) applications in Rust.
 //!
+//! Actix Passport is built around the idea of authentication strategies.
+//!
+//! Authentication strategies register themselves with the framework and are responsible for:
+//!
+//! - Authenticating incoming requests
+//! - Attaching their custom routes to the framework
+//! - Providing their own authentication logic
+//!
+//! The framework provides a default implementation of password and OAuth authentication strategies.
+//!
 //! ## Features
 //!
 //! - **Multiple Authentication Methods**: Username/password (with Argon2 hashing), OAuth 2.0, and session-based authentication
@@ -31,7 +41,7 @@
 //!                 CookieSessionStore::default(),
 //!                 Key::from(&[0; 64])
 //!             ).build())
-//!             .configure(|cfg| auth_framework.configure_routes(cfg))
+//!             .configure(|cfg| auth_framework.configure_routes(cfg, RouteConfig::default()))
 //!     })
 //!     .bind("127.0.0.1:8080")?
 //!     .run()
@@ -55,12 +65,10 @@
 //! The framework is built around these core components:
 //!
 //! - [`ActixPassport`] - Main framework object containing all services
-//! - [`user_store::UserStore`] - Trait for user persistence (implement for your database)
-//! - [`password::service::PasswordAuthService`] - Service for password-based authentication using Argon2
-//! - [`oauth::OAuthProvider`] - Trait for OAuth 2.0 providers
+//! - [`UserStore`] - Trait for user persistence (implement for your database)
+//! - [`AuthStrategy`] - Trait for authentication strategies
 
 pub mod builder;
-
 /// Core Passport types and functions.
 pub mod core;
 /// Authentication error types.

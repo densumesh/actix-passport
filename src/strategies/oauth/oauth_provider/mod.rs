@@ -178,7 +178,7 @@ impl From<OAuthUser> for AuthUser {
 /// # Examples
 ///
 /// ```rust
-/// use actix_passport::{OAuthProvider, OAuthUser, AuthResult};
+/// use actix_passport::{AuthResult, oauth_provider::{OAuthProvider, OAuthUser}};
 /// use async_trait::async_trait;
 ///
 /// #[derive(Clone)]

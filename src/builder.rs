@@ -34,7 +34,7 @@ use crate::{PostgresConfig, PostgresUserStore};
 /// #   async fn delete_user(&self, id: &str) -> AuthResult<()> { Ok(()) }
 /// # }
 /// # #[cfg(feature = "oauth")]
-/// # use actix_passport::GoogleOAuthProvider;
+/// # use actix_passport::oauth_provider::providers::GoogleOAuthProvider;
 ///
 /// let password_strategy = PasswordStrategy::new();
 /// let builder = ActixPassportBuilder::new(MyUserStore)
@@ -146,7 +146,7 @@ where
     /// # Examples
     ///
     /// ```rust,no_run
-    /// use actix_passport::{ActixPassportBuilder, GoogleOAuthProvider, GitHubOAuthProvider};
+    /// use actix_passport::{ActixPassportBuilder, oauth_provider::providers::{GoogleOAuthProvider, GitHubOAuthProvider}};
     /// # use actix_passport::{user_store::UserStore, types::{AuthResult, AuthUser}};
     /// # use async_trait::async_trait;
     /// # #[derive(Clone)] struct MyUserStore;

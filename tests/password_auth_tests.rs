@@ -99,10 +99,17 @@ where
         Error = actix_web::Error,
     >,
 {
-    let login_payload = json!({
-        "identifier": identifier,
-        "password": password
-    });
+    let login_payload = if identifier.contains('@') {
+        json!({
+            "email": identifier,
+            "password": password
+        })
+    } else {
+        json!({
+            "username": identifier,
+            "password": password
+        })
+    };
 
     let req = actix_web::test::TestRequest::post()
         .uri("/auth/login")
@@ -110,7 +117,6 @@ where
         .to_request();
 
     let resp = actix_web::test::call_service(app, req).await;
-
     if resp.status().is_success() {
         resp.response().cookies().next().map(|c| c.into_owned())
     } else {

@@ -16,7 +16,7 @@ use std::env;
 /// # Examples
 ///
 /// ```rust
-/// use actix_passport::GitHubOAuthProvider;
+/// use actix_passport::oauth_provider::providers::GitHubOAuthProvider;
 ///
 /// let provider = GitHubOAuthProvider::new(
 ///     "your_github_client_id".to_string(),

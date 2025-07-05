@@ -14,8 +14,10 @@ use crate::{
 ///
 /// # Examples
 ///
-/// ```rust
-/// use actix_passport::{OAuthService, GoogleOAuthProvider, GitHubOAuthProvider, prelude::InMemoryUserStore};
+/// ```rust,ignore
+/// // This is an internal API - use OAuthStrategy instead
+/// use actix_passport::{oauth_provider::{providers::{GoogleOAuthProvider, GitHubOAuthProvider}}, prelude::InMemoryUserStore};
+/// use actix_passport::strategies::oauth::service::OAuthService;
 ///
 /// let user_store = InMemoryUserStore::new();
 /// let mut oauth_service = OAuthService::new(vec![Box::new(GoogleOAuthProvider::new(
@@ -48,18 +50,6 @@ impl OAuthService {
     /// # Arguments
     ///
     /// * `provider` - The OAuth provider to add
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use actix_passport::{OAuthService, GoogleOAuthProvider};
-    ///
-    /// let user_store = actix_passport::prelude::InMemoryUserStore::new();
-    /// let mut service = OAuthService::new(vec![Box::new(GoogleOAuthProvider::new(
-    ///     "client_id".to_string(),
-    ///     "client_secret".to_string(),
-    /// ))]);
-    /// ```
     pub fn add_provider(&mut self, provider: Box<dyn OAuthProvider>) {
         let name = provider.name().to_string();
         self.providers.insert(name, provider);

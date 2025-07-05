@@ -94,7 +94,7 @@ impl RouteConfig {
     /// ```rust,no_run
     /// use actix_passport::RouteConfig;
     ///
-    /// let config = RouteConfig::new().with_prefix("/auth");
+    /// let config = RouteConfig::new().with_prefix("/auth".to_string());
     /// ```
     #[must_use]
     pub fn with_prefix(mut self, prefix: String) -> Self {

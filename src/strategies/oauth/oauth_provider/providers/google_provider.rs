@@ -16,7 +16,7 @@ use std::env;
 /// # Examples
 ///
 /// ```rust
-/// use actix_passport::GoogleOAuthProvider;
+/// use actix_passport::oauth_provider::providers::GoogleOAuthProvider;
 ///
 /// let provider = GoogleOAuthProvider::new(
 ///     "your_google_client_id".to_string(),
