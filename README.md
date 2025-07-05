@@ -1,5 +1,9 @@
 # Actix Passport
 
+[![Crates.io](https://img.shields.io/crates/v/actix-passport.svg)](https://crates.io/crates/actix-passport)
+[![Documentation](https://docs.rs/actix-passport/badge.svg)](https://docs.rs/actix-passport)
+[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
 A comprehensive, flexible authentication framework for [actix-web](https://actix.rs/) applications in Rust.
 
 ## Features

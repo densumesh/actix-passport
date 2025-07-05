@@ -1,9 +1,9 @@
 [package]
 name = "actix-passport"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Dens Sumesh <dens.sumesh79@gmail.com>"]
-license = "MIT OR Apache-2.0"
+license = "MIT"
 description = "A flexible authentication framework for actix-web"
 repository = "https://github.com/densumesh/actix-passport"
 keywords = ["actix", "web", "authentication", "oauth", "session"]
