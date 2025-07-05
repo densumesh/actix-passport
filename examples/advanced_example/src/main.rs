@@ -1,6 +1,6 @@
-mod services;
 mod stores;
 mod strategies;
+mod token_helpers;
 
 use actix_files::Files;
 use actix_passport::prelude::*;
@@ -8,7 +8,6 @@ use actix_session::{storage::CookieSessionStore, SessionMiddleware};
 use actix_web::{
     cookie::Key, middleware::Logger, web, App, HttpResponse, HttpServer, Responder, Result,
 };
-use services::token_service::TokenService;
 use stores::sqlite_store::SqliteUserStore;
 use strategies::bearer_strategy::BearerAuthStrategy;
 
@@ -66,11 +65,8 @@ async fn main() -> std::io::Result<()> {
     let user_store =
         SqliteUserStore::new("./users.db").expect("Failed to initialize SQLite user store");
 
-    // Initialize token service
-    let token_service = TokenService::new();
-
     // Create Bearer auth strategy
-    let bearer_strategy = BearerAuthStrategy::new(user_store.clone(), token_service);
+    let bearer_strategy = BearerAuthStrategy::new(user_store.clone());
 
     // Build the ActixPassport framework with our custom components
     let auth_framework = ActixPassportBuilder::new(user_store)

@@ -72,6 +72,37 @@ pub struct RouteConfig {
     pub prefix: Option<String>,
 }
 
+impl RouteConfig {
+    /// Creates a new `RouteConfig`
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use actix_passport::RouteConfig;
+    ///
+    /// let config = RouteConfig::new();
+    /// ```
+    #[must_use]
+    pub const fn new() -> Self {
+        Self { prefix: None }
+    }
+
+    /// Creates a new `RouteConfig` with a prefix.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use actix_passport::RouteConfig;
+    ///
+    /// let config = RouteConfig::new().with_prefix("/auth");
+    /// ```
+    #[must_use]
+    pub fn with_prefix(mut self, prefix: String) -> Self {
+        self.prefix = Some(prefix);
+        self
+    }
+}
+
 impl ActixPassport {
     /// Configures the authentication routes for the application.
     ///
@@ -92,6 +123,7 @@ impl ActixPassport {
     /// # Arguments
     ///
     /// * `cfg` - The service config to add the routes to.
+    #[allow(clippy::needless_pass_by_value)]
     pub fn configure_routes(&self, cfg: &mut web::ServiceConfig, config: RouteConfig) {
         cfg.app_data(web::Data::new(self.clone()));
         let mut auth_scope = web::scope(config.prefix.as_deref().unwrap_or("/auth"));

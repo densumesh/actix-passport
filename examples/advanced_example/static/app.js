@@ -1,263 +1,217 @@
+// Bearer token storage
 let currentToken = localStorage.getItem('bearer_token');
 
-// Update UI based on authentication state
-function updateAuthState() {
-    const tokenDisplay = document.getElementById('token-display');
-    const tokenElement = document.getElementById('current-token');
-    
-    if (currentToken) {
-        tokenDisplay.style.display = 'block';
-        tokenElement.textContent = currentToken;
-    } else {
-        tokenDisplay.style.display = 'none';
+// Tab switching functionality
+function openTab(evt, tabName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].classList.remove("active");
     }
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].classList.remove("active");
+    }
+    document.getElementById(tabName).classList.add("active");
+    evt.currentTarget.classList.add("active");
 }
 
-// Show different sections
-function showSection(sectionName) {
-    // Hide all sections
-    const sections = document.querySelectorAll('.auth-section');
-    sections.forEach(section => section.classList.remove('active'));
-    
-    // Remove active class from all tabs
-    const tabs = document.querySelectorAll('.nav-tab');
-    tabs.forEach(tab => tab.classList.remove('active'));
-    
-    // Show selected section
-    document.getElementById(`${sectionName}-section`).classList.add('active');
-    
-    // Add active class to clicked tab
-    event.target.classList.add('active');
+// Show message to user
+function showMessage(message, type = 'error') {
+    const messageEl = document.getElementById('message');
+    messageEl.innerHTML = `<div class="message ${type}">${message}</div>`;
 }
 
-// Display response
-function showResponse(data, isError = false) {
-    const container = document.getElementById('response-container');
-    const response = document.getElementById('response');
-    
-    container.style.display = 'block';
-    response.className = `response ${isError ? 'error' : 'success'}`;
-    response.textContent = JSON.stringify(data, null, 2);
-    
-    // Scroll to response
-    container.scrollIntoView({ behavior: 'smooth' });
-}
-
-// Make API request
-async function makeRequest(url, options = {}) {
-    try {
-        const response = await fetch(url, {
-            headers: {
-                'Content-Type': 'application/json',
-                ...(currentToken && { 'Authorization': `Bearer ${currentToken}` }),
-                ...options.headers
-            },
-            ...options
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            showResponse(data, false);
-            return data;
-        } else {
-            showResponse(data, true);
-            return null;
-        }
-    } catch (error) {
-        showResponse({ error: 'Network Error', message: error.message }, true);
-        return null;
-    }
-}
-
-// Register user
-document.getElementById('register-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const email = document.getElementById('reg-email').value;
-    const username = document.getElementById('reg-username').value;
-    const password = document.getElementById('reg-password').value;
-    const displayName = document.getElementById('reg-display-name').value;
-    
-    if (!email && !username) {
-        showResponse({ error: 'Validation Error', message: 'Either email or username is required' }, true);
-        return;
-    }
-    
-    if (!password || password.length < 8) {
-        showResponse({ error: 'Validation Error', message: 'Password must be at least 8 characters long' }, true);
-        return;
-    }
-    
-    const payload = {
-        password,
-        ...(email && { email }),
-        ...(username && { username }),
-        ...(displayName && { display_name: displayName })
+// Make authenticated API request
+async function makeAuthenticatedRequest(url, options = {}) {
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
     };
-    
-    const result = await makeRequest('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-    });
-    
-    if (result && result.token) {
-        currentToken = result.token;
-        localStorage.setItem('bearer_token', currentToken);
-        updateAuthState();
-        
-        // Show success message
-        showResponse({
-            message: 'Registration successful!',
-            user: result.user,
-            token: result.token
-        }, false);
-        
-        // Switch to profile tab
-        setTimeout(() => {
-            showSection('profile');
-        }, 2000);
-    }
-});
 
-// Login user
+    if (currentToken) {
+        headers['Authorization'] = `Bearer ${currentToken}`;
+    }
+
+    return fetch(url, {
+        ...options,
+        headers
+    });
+}
+
+// Handle login form submission
 document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const identifier = document.getElementById('login-identifier').value;
-    const password = document.getElementById('login-password').value;
-    
-    if (!identifier || !password) {
-        showResponse({ error: 'Validation Error', message: 'Both identifier and password are required' }, true);
-        return;
-    }
-    
-    const result = await makeRequest('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ identifier, password })
-    });
-    
-    if (result && result.token) {
-        currentToken = result.token;
-        localStorage.setItem('bearer_token', currentToken);
-        updateAuthState();
-        
-        // Show success message
-        showResponse({
-            message: 'Login successful!',
-            user: result.user,
-            token: result.token
-        }, false);
-        
-        // Switch to profile tab
-        setTimeout(() => {
-            showSection('profile');
-        }, 2000);
+
+    const formData = new FormData(e.target);
+    const identifier = formData.get('identifier');
+    const password = formData.get('password');
+
+    try {
+        const response = await fetch('/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ identifier, password })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            currentToken = data.token;
+            localStorage.setItem('bearer_token', currentToken);
+            showMessage('Login successful!', 'success');
+            showUserSection(data.user);
+        } else {
+            const error = await response.json();
+            showMessage(`Login failed: ${error.message}`, 'error');
+        }
+    } catch (error) {
+        showMessage(`Login error: ${error.message}`, 'error');
     }
 });
 
-// Get user profile
-async function getProfile() {
-    if (!currentToken) {
-        showResponse({ error: 'Authentication Required', message: 'Please login first to get a Bearer token' }, true);
-        return;
+// Handle register form submission
+document.getElementById('register-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+    const email = formData.get('email');
+    const username = formData.get('username');
+    const password = formData.get('password');
+    const display_name = formData.get('display_name');
+
+    const payload = { password };
+    if (email) payload.email = email;
+    if (username) payload.username = username;
+    if (display_name) payload.display_name = display_name;
+
+    try {
+        const response = await fetch('/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            currentToken = data.token;
+            localStorage.setItem('bearer_token', currentToken);
+            showMessage('Registration successful!', 'success');
+            showUserSection(data.user);
+        } else {
+            const error = await response.json();
+            showMessage(`Registration failed: ${error.message}`, 'error');
+        }
+    } catch (error) {
+        showMessage(`Registration error: ${error.message}`, 'error');
     }
-    
-    await makeRequest('/auth/profile', {
-        method: 'GET'
-    });
+});
+
+// Show user section after successful authentication
+function showUserSection(user) {
+    document.getElementById('auth-section').style.display = 'none';
+    document.getElementById('user-section').style.display = 'block';
+
+    // Update user info
+    document.getElementById('username-display').textContent = user.username || user.display_name || user.email || 'User';
+    document.getElementById('user-id').textContent = user.id || 'N/A';
+    document.getElementById('user-email').textContent = user.email || 'N/A';
+    document.getElementById('user-username').textContent = user.username || 'N/A';
+    document.getElementById('user-display-name').textContent = user.display_name || 'N/A';
+
+    // Format creation date
+    const createdEl = document.getElementById('user-created');
+    if (user.created_at) {
+        const date = new Date(user.created_at);
+        createdEl.textContent = date.toLocaleDateString();
+    } else {
+        createdEl.textContent = 'N/A';
+    }
+
+
+
+    // Clear forms
+    document.getElementById('login-form').reset();
+    document.getElementById('register-form').reset();
 }
 
-// Logout user
-async function logout() {
+// Show auth section (login/register forms)
+function showAuthSection() {
+    document.getElementById('auth-section').style.display = 'block';
+    document.getElementById('user-section').style.display = 'none';
+}
+
+// Handle profile button click
+document.getElementById('get-profile-btn').addEventListener('click', async () => {
     if (!currentToken) {
-        showResponse({ error: 'Not Authenticated', message: 'No active session to logout' }, true);
+        showMessage('Please login first to get a token', 'error');
         return;
     }
-    
-    const result = await makeRequest('/auth/logout', {
-        method: 'POST'
-    });
-    
-    if (result) {
+
+    try {
+        const response = await makeAuthenticatedRequest('/auth/profile');
+        if (response.ok) {
+            const user = await response.json();
+            showMessage('Profile loaded successfully!', 'success');
+            showUserSection(user);
+        } else {
+            const error = await response.json();
+            showMessage(`Failed to load profile: ${error.message}`, 'error');
+            if (response.status === 401) {
+                // Token expired or invalid
+                currentToken = null;
+                localStorage.removeItem('bearer_token');
+                showAuthSection();
+            }
+        }
+    } catch (error) {
+        showMessage(`Profile error: ${error.message}`, 'error');
+    }
+});
+
+// Handle logout button click
+document.getElementById('logout-btn').addEventListener('click', logout);
+
+// Handle logout
+async function logout() {
+    try {
+        if (currentToken) {
+            await makeAuthenticatedRequest('/auth/logout', { method: 'POST' });
+        }
+
         currentToken = null;
         localStorage.removeItem('bearer_token');
-        updateAuthState();
-        
-        showResponse({ message: 'Logged out successfully' }, false);
-    }
-}
-
-// Test API connectivity
-async function testConnection() {
-    try {
-        const response = await fetch('/health');
-        const data = await response.json();
-        console.log('API Health Check:', data);
+        showMessage('Logged out successfully!', 'success');
+        showAuthSection();
     } catch (error) {
-        console.error('API connection failed:', error);
+        showMessage(`Logout error: ${error.message}`, 'error');
     }
 }
 
-// Initialize app
-document.addEventListener('DOMContentLoaded', () => {
-    updateAuthState();
-    testConnection();
-    
-    // Load API info
-    fetch('/api/info')
-        .then(response => response.json())
-        .then(data => {
-            console.log('API Documentation:', data);
-        })
-        .catch(error => {
-            console.error('Failed to load API info:', error);
-        });
-});
+// Check if user is already authenticated on page load
+async function checkAuthStatus() {
+    if (!currentToken) {
+        return; // No token, stay on login page
+    }
 
-// Add some helper functions for demonstration
-function clearAll() {
-    currentToken = null;
-    localStorage.removeItem('bearer_token');
-    updateAuthState();
-    document.getElementById('response-container').style.display = 'none';
-    
-    // Clear all form fields
-    document.querySelectorAll('input').forEach(input => input.value = '');
-    
-    showResponse({ message: 'All data cleared' }, false);
-}
-
-function copyToken() {
-    if (currentToken) {
-        navigator.clipboard.writeText(currentToken).then(() => {
-            alert('Token copied to clipboard!');
-        }).catch(err => {
-            console.error('Failed to copy token:', err);
-        });
+    try {
+        const response = await makeAuthenticatedRequest('/auth/profile');
+        if (response.ok) {
+            const user = await response.json();
+            showUserSection(user);
+        } else {
+            // Token invalid, clear it
+            currentToken = null;
+            localStorage.removeItem('bearer_token');
+        }
+    } catch (error) {
+        // User not authenticated, stay on login page
+        console.log('User not authenticated');
     }
 }
 
-// Add copy button functionality
-document.addEventListener('DOMContentLoaded', () => {
-    const tokenInfo = document.querySelector('.token-info');
-    if (tokenInfo) {
-        const copyButton = document.createElement('button');
-        copyButton.textContent = 'Copy Token';
-        copyButton.onclick = copyToken;
-        copyButton.style.marginTop = '10px';
-        copyButton.style.fontSize = '12px';
-        copyButton.style.padding = '5px 10px';
-        tokenInfo.appendChild(copyButton);
-        
-        const clearButton = document.createElement('button');
-        clearButton.textContent = 'Clear All';
-        clearButton.onclick = clearAll;
-        clearButton.style.marginTop = '10px';
-        clearButton.style.marginLeft = '10px';
-        clearButton.style.fontSize = '12px';
-        clearButton.style.padding = '5px 10px';
-        clearButton.style.backgroundColor = '#dc3545';
-        tokenInfo.appendChild(clearButton);
-    }
-});
+// Check auth status when page loads
+document.addEventListener('DOMContentLoaded', checkAuthStatus);

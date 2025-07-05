@@ -1,5 +1,5 @@
-use crate::services::token_service::TokenService;
 use crate::stores::sqlite_store::SqliteUserStore;
+use crate::token_helpers::{generate_salt, generate_token};
 use actix_passport::{strategies::AuthStrategy, types::AuthUser};
 use actix_web::{
     web::{self, Data},
@@ -12,7 +12,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone)]
 pub struct BearerAuthStrategy {
     user_store: SqliteUserStore,
-    token_service: TokenService,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -42,11 +41,8 @@ pub struct ErrorResponse {
 }
 
 impl BearerAuthStrategy {
-    pub fn new(user_store: SqliteUserStore, token_service: TokenService) -> Self {
-        Self {
-            user_store,
-            token_service,
-        }
+    pub fn new(user_store: SqliteUserStore) -> Self {
+        Self { user_store }
     }
 
     async fn register_handler(
@@ -70,7 +66,7 @@ impl BearerAuthStrategy {
         }
 
         // Hash the password
-        let salt = strategy.token_service.generate_salt();
+        let salt = generate_salt();
         let password_hash = match Argon2::default().hash_password(req.password.as_bytes(), &salt) {
             Ok(hash) => hash.to_string(),
             Err(e) => {
@@ -100,7 +96,7 @@ impl BearerAuthStrategy {
         {
             Ok(user) => {
                 // Generate auth token
-                match strategy.token_service.generate_token(&user.id) {
+                match generate_token(&user.id) {
                     Ok(token) => {
                         if let Err(e) = strategy.user_store.store_auth_token(&token, &user.id, None)
                         {
@@ -154,7 +150,7 @@ impl BearerAuthStrategy {
         {
             Ok(Some(user)) => {
                 // Generate auth token
-                match strategy.token_service.generate_token(&user.id) {
+                match generate_token(&user.id) {
                     Ok(token) => {
                         if let Err(e) = strategy.user_store.store_auth_token(&token, &user.id, None)
                         {

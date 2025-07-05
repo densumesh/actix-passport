@@ -1,239 +1,236 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced SQLite Bearer Auth Demo</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SQLite Bearer Auth - Actix Passport</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        h1, h2 {
-            color: #333;
-            border-bottom: 2px solid #007acc;
-            padding-bottom: 10px;
-        }
-        .auth-section {
-            display: none;
-        }
-        .auth-section.active {
-            display: block;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #555;
-        }
-        input[type="text"], input[type="email"], input[type="password"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: #007acc;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-right: 10px;
-            margin-top: 10px;
-        }
-        button:hover {
-            background-color: #005a99;
-        }
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        .toggle-btn {
-            background-color: #6c757d;
-        }
-        .toggle-btn:hover {
-            background-color: #545b62;
-        }
-        .response {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 5px;
-            white-space: pre-wrap;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .response.success {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-        .response.error {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-        .token-info {
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-            word-break: break-all;
-        }
-        .api-docs {
-            background-color: #e7f3ff;
-            border: 1px solid #b3d9ff;
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        .endpoint {
-            background-color: #f8f9fa;
-            border-left: 4px solid #007acc;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 0 5px 5px 0;
-        }
-        .method {
-            font-weight: bold;
-            color: #007acc;
-        }
-        .required {
-            color: #dc3545;
-        }
-        .nav-tabs {
-            display: flex;
-            border-bottom: 1px solid #ddd;
-            margin-bottom: 20px;
-        }
-        .nav-tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            border: 1px solid transparent;
-            border-bottom: none;
-            background-color: #f8f9fa;
-            margin-right: 5px;
-            border-radius: 5px 5px 0 0;
-        }
-        .nav-tab.active {
-            background-color: white;
-            border-color: #ddd;
-            border-bottom: 1px solid white;
-            margin-bottom: -1px;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 30px;
+      }
+      .tab {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        display: flex;
+      }
+      .tab button {
+        background: none;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        width: 50%;
+        color: #495057;
+      }
+
+      .tab button.active {
+        background-color: #007bff;
+        color: white;
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+      }
+      input[type="text"],
+      input[type="email"],
+      input[type="password"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        width: 100%;
+        font-size: 16px;
+      }
+
+      .user-info {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+      }
+      .token-info {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        word-break: break-all;
+        font-family: monospace;
+        font-size: 12px;
+      }
+      .logout-btn {
+        background-color: #dc3545;
+      }
+      .logout-btn:hover {
+        background-color: #c82333;
+      }
+      .message {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+      }
+      .success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .required {
+        color: #dc3545;
+      }
+      .api-info {
+        background-color: #e7f3ff;
+        border: 1px solid #b3d9ff;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        font-size: 14px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>🔐 Advanced SQLite Bearer Auth Demo</h1>
-        
-        <div class="api-docs">
-            <h3>🔗 API Endpoints</h3>
-            <div class="endpoint">
-                <span class="method">POST</span> /auth/register - Register a new user
+      <h1>SQLite Bearer Authentication Demo</h1>
+
+      <div id="auth-section">
+        <div class="tab">
+          <button class="tablinks active" onclick="openTab(event, 'login')">
+            Login
+          </button>
+          <button class="tablinks" onclick="openTab(event, 'register')">
+            Register
+          </button>
+        </div>
+
+        <div id="login" class="tab-content active">
+          <form id="login-form">
+            <div class="form-group">
+              <label for="login-identifier">Username or Email:</label>
+              <input
+                type="text"
+                id="login-identifier"
+                name="identifier"
+                required />
             </div>
-            <div class="endpoint">
-                <span class="method">POST</span> /auth/login - Login with credentials
+            <div class="form-group">
+              <label for="login-password">Password:</label>
+              <input
+                type="password"
+                id="login-password"
+                name="password"
+                required />
             </div>
-            <div class="endpoint">
-                <span class="method">GET</span> /auth/profile - Get user profile (requires Bearer token)
+            <button type="submit">Login</button>
+          </form>
+        </div>
+
+        <div id="register" class="tab-content">
+          <form id="register-form">
+            <div class="form-group">
+              <label for="register-email">Email:</label>
+              <input type="email" id="register-email" name="email" required />
             </div>
-            <div class="endpoint">
-                <span class="method">POST</span> /auth/logout - Logout and invalidate token
+            <div class="form-group">
+              <label for="register-username">Username (optional):</label>
+              <input type="text" id="register-username" name="username" />
             </div>
-        </div>
-
-        <div class="nav-tabs">
-            <div class="nav-tab active" onclick="showSection('register')">Register</div>
-            <div class="nav-tab" onclick="showSection('login')">Login</div>
-            <div class="nav-tab" onclick="showSection('profile')">Profile</div>
-        </div>
-
-        <!-- Register Section -->
-        <div id="register-section" class="auth-section active">
-            <h2>👤 Register New User</h2>
-            <form id="register-form">
-                <div class="form-group">
-                    <label for="reg-email">Email <span class="required">*</span></label>
-                    <input type="email" id="reg-email" placeholder="user@example.com">
-                </div>
-                <div class="form-group">
-                    <label for="reg-username">Username</label>
-                    <input type="text" id="reg-username" placeholder="johndoe">
-                </div>
-                <div class="form-group">
-                    <label for="reg-password">Password <span class="required">*</span></label>
-                    <input type="password" id="reg-password" placeholder="Minimum 8 characters">
-                </div>
-                <div class="form-group">
-                    <label for="reg-display-name">Display Name</label>
-                    <input type="text" id="reg-display-name" placeholder="John Doe">
-                </div>
-                <button type="submit">Register</button>
-            </form>
-        </div>
-
-        <!-- Login Section -->
-        <div id="login-section" class="auth-section">
-            <h2>🔑 Login</h2>
-            <form id="login-form">
-                <div class="form-group">
-                    <label for="login-identifier">Email or Username <span class="required">*</span></label>
-                    <input type="text" id="login-identifier" placeholder="user@example.com or johndoe">
-                </div>
-                <div class="form-group">
-                    <label for="login-password">Password <span class="required">*</span></label>
-                    <input type="password" id="login-password" placeholder="Your password">
-                </div>
-                <button type="submit">Login</button>
-            </form>
-        </div>
-
-        <!-- Profile Section -->
-        <div id="profile-section" class="auth-section">
-            <h2>👤 User Profile</h2>
-            <p>This section requires a valid Bearer token. Login first to get a token.</p>
-            <button onclick="getProfile()">Get Profile</button>
-            <button onclick="logout()" style="background-color: #dc3545;">Logout</button>
-        </div>
-
-        <!-- Token Display -->
-        <div id="token-display" style="display: none;">
-            <h3>🎫 Authentication Token</h3>
-            <div class="token-info">
-                <strong>Bearer Token:</strong> <span id="current-token"></span>
-                <br><br>
-                <small>Use this token in the Authorization header: <code>Authorization: Bearer &lt;token&gt;</code></small>
+            <div class="form-group">
+              <label for="register-password"
+                >Password <span class="required">(min 8 chars)</span>:</label
+              >
+              <input
+                type="password"
+                id="register-password"
+                name="password"
+                required />
             </div>
+            <div class="form-group">
+              <label for="register-display-name"
+                >Display Name (optional):</label
+              >
+              <input
+                type="text"
+                id="register-display-name"
+                name="display_name" />
+            </div>
+            <button type="submit">Register</button>
+          </form>
         </div>
 
-        <!-- Response Display -->
-        <div id="response-container" style="display: none;">
-            <h3>📡 Server Response</h3>
-            <div id="response" class="response"></div>
+        <div id="profile" class="tab-content">
+          <p>
+            Access your profile information using the Bearer token from
+            login/register.
+          </p>
+          <button type="button" id="get-profile-btn">Get Profile</button>
+          <button type="button" id="logout-btn" class="logout-btn">
+            Logout
+          </button>
         </div>
+      </div>
+
+      <div id="user-section" style="display: none">
+        <div class="user-info">
+          <h3>Welcome, <span id="username-display"></span>!</h3>
+          <p>You are successfully authenticated with Bearer token.</p>
+          <p><strong>User ID:</strong> <span id="user-id"></span></p>
+          <p><strong>Email:</strong> <span id="user-email"></span></p>
+          <p><strong>Username:</strong> <span id="user-username"></span></p>
+          <p>
+            <strong>Display Name:</strong> <span id="user-display-name"></span>
+          </p>
+          <p><strong>Member Since:</strong> <span id="user-created"></span></p>
+        </div>
+
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+
+      <div id="message"></div>
     </div>
 
     <script src="app.js"></script>
-</body>
+  </body>
 </html>
