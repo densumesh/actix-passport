@@ -110,9 +110,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(auth_framework.clone()))
             .app_data(web::Data::new(email_service.clone()))
             .service(web::scope("/api").route("/user", web::get().to(user_info)))
-            // Email verification via URL
             .route("/auth/verify-email", web::get().to(verify_email_page))
-            // Password reset page via URL
             .route("/auth/reset-password", web::get().to(reset_password_page))
             .configure(|cfg| {
                 auth_framework
