@@ -1,0 +1,18 @@
+[package]
+name = "email_example"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-passport = { workspace = true, features = ["email"] }
+actix-web = { workspace = true }
+actix-session = { workspace = true }
+actix-files = "0.6"
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+env_logger = { workspace = true }
+dotenvy = { workspace = true }
+uuid = { workspace = true }
+chrono = { version = "0.4", features = ["serde"] }
+urlencoding = "2.1"

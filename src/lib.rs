@@ -71,6 +71,9 @@
 pub mod builder;
 /// Core Passport types and functions.
 pub mod core;
+/// Email functionality for verification and password reset.
+#[cfg(feature = "email")]
+pub mod email;
 /// Authentication error types.
 pub mod errors;
 /// Authentication strategy trait and implementations.

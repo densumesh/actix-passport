@@ -176,6 +176,53 @@ where
         self
     }
 
+    /// Enables password authentication with email verification and password reset functionality.
+    ///
+    /// This method creates and adds a `PasswordStrategy` with email services to the framework.
+    /// The strategy provides traditional password authentication plus email verification and
+    /// password reset routes.
+    ///
+    /// # Arguments
+    ///
+    /// * `email_service` - The email service for sending verification and reset emails
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use actix_passport::{ActixPassportBuilder, email::{EmailConfig, EmailService}};
+    ///
+    /// # async fn example() -> std::io::Result<()> {
+    /// let email_config = EmailConfig::gmail(
+    ///     "user@gmail.com",
+    ///     "app_password",
+    ///     "https://myapp.com"
+    /// );
+    ///
+    /// let email_service = EmailService::new(
+    ///     email_config,
+    ///     "My App",
+    ///     "secret_key"
+    /// ).await.unwrap();
+    ///
+    /// let framework = ActixPassportBuilder::with_in_memory_store()
+    ///     .enable_password_auth_with_email(email_service)
+    ///     .build();
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[cfg(feature = "email")]
+    #[must_use]
+    pub fn enable_password_auth_with_email(
+        mut self,
+        email_service: crate::email::EmailService,
+    ) -> Self {
+        use crate::strategies::password::PasswordStrategy;
+
+        let strategy = PasswordStrategy::with_email_service(email_service);
+        self.strategies.push(Box::new(strategy));
+        self
+    }
+
     /// Builds the `ActixPassport`.
     pub fn build(self) -> ActixPassport {
         ActixPassport {

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email Authentication Demo - Actix Passport</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 30px;
+      }
+      .feature-badge {
+        display: inline-block;
+        background-color: #17a2b8;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        margin-left: 10px;
+      }
+      .tab {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .tab button {
+        background: none;
+        border: none;
+        padding: 10px 15px;
+        cursor: pointer;
+        flex: 1;
+        color: #495057;
+        min-width: 120px;
+      }
+      .tab button.active {
+        background-color: #007bff;
+        color: white;
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+      }
+      input[type="text"],
+      input[type="email"],
+      input[type="password"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        width: 100%;
+        font-size: 16px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      .user-info {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+      }
+      .verification-status {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      .verified {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .unverified {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      .logout-btn {
+        background-color: #dc3545;
+      }
+      .logout-btn:hover {
+        background-color: #c82333;
+      }
+      .message {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+      }
+      .success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .info {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+      .demo-info {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        font-size: 14px;
+      }
+      .demo-info h3 {
+        margin: 0 0 10px 0;
+        color: #856404;
+      }
+      .demo-info ul {
+        margin: 10px 0;
+        padding-left: 20px;
+      }
+      .help-text {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Email Authentication Demo</h1>
+
+      <div id="auth-section">
+        <div class="tab">
+          <button class="tablinks active" onclick="openTab(event, 'login')">
+            Login
+          </button>
+          <button class="tablinks" onclick="openTab(event, 'register')">
+            Register
+          </button>
+          <button class="tablinks" onclick="openTab(event, 'verify')">
+            Verify Email
+          </button>
+          <button class="tablinks" onclick="openTab(event, 'forgot')">
+            Forgot Password
+          </button>
+          <button class="tablinks" onclick="openTab(event, 'reset')">
+            Reset Password
+          </button>
+        </div>
+
+        <div id="login" class="tab-content active">
+          <form id="login-form">
+            <div class="form-group">
+              <label for="login-username">Username or Email:</label>
+              <input type="text" id="login-username" name="username" required />
+            </div>
+            <div class="form-group">
+              <label for="login-password">Password:</label>
+              <input
+                type="password"
+                id="login-password"
+                name="password"
+                required />
+            </div>
+            <button type="submit">Login</button>
+            <div style="text-align: center; margin-top: 15px;">
+              <a href="#" onclick="openTab(event, 'forgot')" style="color: #007bff; text-decoration: none; font-size: 14px;">
+                Forgot your password?
+              </a>
+            </div>
+          </form>
+        </div>
+
+        <div id="register" class="tab-content">
+          <form id="register-form">
+            <div class="form-group">
+              <label for="register-username">Username:</label>
+              <input
+                type="text"
+                id="register-username"
+                name="username"
+                required />
+            </div>
+            <div class="form-group">
+              <label for="register-email">Email:</label>
+              <input type="email" id="register-email" name="email" required />
+              <div class="help-text">
+                You'll receive a verification email after registration
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="register-password">Password:</label>
+              <input
+                type="password"
+                id="register-password"
+                name="password"
+                required />
+            </div>
+            <button type="submit">Register</button>
+          </form>
+        </div>
+
+        <div id="verify" class="tab-content">
+          <form id="verify-form">
+            <div class="form-group">
+              <label for="verify-token">Email Verification Token:</label>
+              <input
+                type="text"
+                id="verify-token"
+                name="token"
+                placeholder="Enter token from verification email"
+                required />
+              <div class="help-text">
+                Copy the token from your verification email
+              </div>
+            </div>
+            <button type="submit">Verify Email</button>
+          </form>
+        </div>
+
+        <div id="forgot" class="tab-content">
+          <form id="forgot-form">
+            <div class="form-group">
+              <label for="forgot-email">Email Address:</label>
+              <input type="email" id="forgot-email" name="email" required />
+              <div class="help-text">
+                We'll send a password reset link to this email
+              </div>
+            </div>
+            <button type="submit">Send Reset Link</button>
+          </form>
+        </div>
+
+        <div id="reset" class="tab-content">
+          <form id="reset-form">
+            <div class="form-group">
+              <label for="reset-token">Reset Token:</label>
+              <input
+                type="text"
+                id="reset-token"
+                name="token"
+                placeholder="Enter token from reset email"
+                required />
+              <div class="help-text">
+                Copy the token from your password reset email
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="reset-password">New Password:</label>
+              <input
+                type="password"
+                id="reset-password"
+                name="password"
+                required />
+            </div>
+            <button type="submit">Reset Password</button>
+          </form>
+        </div>
+      </div>
+
+      <div id="user-section" style="display: none">
+        <div class="user-info">
+          <h3>Welcome, <span id="username-display"></span>!</h3>
+          <p>You are successfully authenticated.</p>
+          <p><strong>User ID:</strong> <span id="user-id"></span></p>
+          <p><strong>Email:</strong> <span id="user-email"></span></p>
+          <p><strong>Email Status:</strong> <span id="email-status"></span></p>
+          <p>
+            <strong>Display Name:</strong> <span id="user-display-name"></span>
+          </p>
+          <p>
+            <strong>Connected Providers:</strong>
+            <span id="oauth-providers"></span>
+          </p>
+          <p><strong>Member Since:</strong> <span id="user-created"></span></p>
+        </div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+
+      <div id="message"></div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -93,6 +93,29 @@ pub trait UserStore: Send + Sync + DynClone {
     ///
     /// * `id` - The ID of the user to delete
     async fn delete_user(&self, id: &str) -> AuthResult<()>;
+
+    /// Sets the email verification status for a user.
+    ///
+    /// # Arguments
+    ///
+    /// * `user_id` - The ID of the user
+    /// * `verified` - Whether the email should be marked as verified
+    ///
+    /// # Returns
+    ///
+    /// Returns the updated user.
+    #[cfg(feature = "email")]
+    async fn set_email_verified(&self, user_id: &str, verified: bool) -> AuthResult<AuthUser> {
+        let mut user = self.find_by_id(user_id).await?.ok_or_else(|| {
+            crate::errors::AuthError::UserNotFound {
+                field: "id".to_string(),
+                value: user_id.to_string(),
+            }
+        })?;
+
+        user = user.with_email_verified(verified);
+        self.update_user(user).await
+    }
 }
 
 dyn_clone::clone_trait_object!(UserStore);

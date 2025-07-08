@@ -134,6 +134,36 @@ pub enum AuthError {
         /// Additional context for debugging
         context: Option<HashMap<String, String>>,
     },
+
+    /// Email sending failed.
+    #[error("Email sending failed: {message}")]
+    EmailError {
+        /// The error message from the email service
+        message: String,
+    },
+
+    /// Email token validation failed.
+    #[error("Token validation failed: {message}")]
+    TokenError {
+        /// The reason why token validation failed
+        message: String,
+    },
+
+    /// Email template rendering failed.
+    #[error("Template rendering failed: {message}")]
+    TemplateError {
+        /// The error message from the template engine
+        message: String,
+    },
+
+    /// Rate limit exceeded for email operations.
+    #[error("Rate limit exceeded: {message}")]
+    RateLimitExceeded {
+        /// The rate limit error message
+        message: String,
+        /// Time until the rate limit resets (in seconds)
+        reset_after: Option<u64>,
+    },
 }
 
 impl AuthError {
@@ -159,6 +189,10 @@ impl AuthError {
             Self::PasswordValidationFailed { .. } => "PASSWORD_VALIDATION_FAILED",
             Self::RegistrationFailed { .. } => "REGISTRATION_FAILED",
             Self::Internal { .. } => "INTERNAL_ERROR",
+            Self::EmailError { .. } => "EMAIL_ERROR",
+            Self::TokenError { .. } => "TOKEN_ERROR",
+            Self::TemplateError { .. } => "TEMPLATE_ERROR",
+            Self::RateLimitExceeded { .. } => "RATE_LIMIT_EXCEEDED",
         }
     }
 
@@ -208,6 +242,17 @@ impl AuthError {
             Self::Internal { .. } => {
                 "An unexpected error occurred. Please try again later.".to_string()
             }
+            Self::EmailError { .. } => "Email sending failed. Please try again later.".to_string(),
+            Self::TokenError { .. } => {
+                "Invalid or expired verification link. Please request a new one.".to_string()
+            }
+            Self::TemplateError { .. } => {
+                "Email template error. Please contact support.".to_string()
+            }
+            Self::RateLimitExceeded { reset_after, .. } => reset_after.as_ref().map_or_else(
+                || "Too many requests. Please try again later.".to_string(),
+                |seconds| format!("Too many requests. Please try again in {seconds} seconds."),
+            ),
         }
     }
 
@@ -294,6 +339,24 @@ impl AuthError {
                     "security_issue".to_string(),
                     "Potential CSRF attack detected".to_string(),
                 );
+            }
+            Self::EmailError { message } => {
+                info.insert("email_error".to_string(), message.clone());
+            }
+            Self::TokenError { message } => {
+                info.insert("token_error".to_string(), message.clone());
+            }
+            Self::TemplateError { message } => {
+                info.insert("template_error".to_string(), message.clone());
+            }
+            Self::RateLimitExceeded {
+                message,
+                reset_after,
+            } => {
+                info.insert("rate_limit_message".to_string(), message.clone());
+                if let Some(reset) = reset_after {
+                    info.insert("reset_after_seconds".to_string(), reset.to_string());
+                }
             }
         }
 

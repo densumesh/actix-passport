@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email Verified - Actix Passport</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+      .success-icon {
+        font-size: 64px;
+        color: #28a745;
+        margin-bottom: 20px;
+      }
+      h1 {
+        color: #28a745;
+        margin-bottom: 20px;
+      }
+      p {
+        color: #666;
+        margin-bottom: 20px;
+        line-height: 1.6;
+      }
+      .btn {
+        background-color: #007bff;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        text-decoration: none;
+        display: inline-block;
+        margin: 10px;
+      }
+      .btn:hover {
+        background-color: #0056b3;
+      }
+      .btn-secondary {
+        background-color: #6c757d;
+      }
+      .btn-secondary:hover {
+        background-color: #545b62;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="success-icon">✓</div>
+      <h1>Email Verified Successfully!</h1>
+      <p>
+        Your email address has been verified successfully. You can now log in to
+        your account and access all features.
+      </p>
+      <p>
+        Thank you for verifying your email address. This helps us keep your
+        account secure.
+      </p>
+
+      <a href="/" class="btn">Go to Login</a>
+      <a href="/" class="btn btn-secondary">Back to Home</a>
+    </div>
+
+    <script>
+      const token = new URLSearchParams(window.location.search).get("token");
+
+      fetch("/auth/verify-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          token: token,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(data);
+        });
+
+      // Auto-redirect after 5 seconds
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 5000);
+
+      // Check if there's an email parameter in the URL and display it
+      const urlParams = new URLSearchParams(window.location.search);
+      const email = urlParams.get("email");
+      if (email) {
+        const emailMessage = document.createElement("p");
+        emailMessage.innerHTML = `Email <strong>${email}</strong> has been verified.`;
+        emailMessage.style.fontWeight = "bold";
+        emailMessage.style.color = "#28a745";
+        document
+          .querySelector(".container")
+          .insertBefore(emailMessage, document.querySelector("a"));
+      }
+    </script>
+  </body>
+</html>

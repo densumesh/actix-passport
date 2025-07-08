@@ -39,6 +39,9 @@ pub struct AuthUser {
     pub created_at: DateTime<Utc>,
     /// Timestamp of the user's last login (optional)
     pub last_login: Option<DateTime<Utc>>,
+    /// Timestamp when the email was verified (optional)
+    #[cfg(feature = "email")]
+    pub email_verified_at: Option<DateTime<Utc>>,
     /// Additional custom metadata for the user
     #[serde(skip_serializing)]
     pub metadata: HashMap<String, serde_json::Value>,
@@ -68,6 +71,9 @@ impl AuthUser {
             avatar_url: None,
             created_at: Utc::now(),
             last_login: None,
+
+            #[cfg(feature = "email")]
+            email_verified_at: None,
             metadata: HashMap::new(),
         }
     }
@@ -266,6 +272,54 @@ impl AuthUser {
             .get("oauth_providers")
             .and_then(|providers| providers.as_object())
             .and_then(|obj| obj.get(provider))
+    }
+
+    /// Sets the email verification status.
+    ///
+    /// # Arguments
+    ///
+    /// * `verified` - Whether the email is verified
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use actix_passport::AuthUser;
+    ///
+    /// let user = AuthUser::new("user123")
+    ///     .with_email("user@example.com")
+    ///     .with_email_verified(true);
+    ///
+    /// # #[cfg(feature = "email")]
+    /// assert!(user.is_email_verified());
+    /// ```
+    #[cfg(feature = "email")]
+    #[must_use]
+    pub fn with_email_verified(mut self, verified: bool) -> Self {
+        if verified && self.email_verified_at.is_none() {
+            self.email_verified_at = Some(Utc::now());
+        } else if !verified {
+            self.email_verified_at = None;
+        }
+        self
+    }
+
+    /// Checks if the user's email is verified.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use actix_passport::AuthUser;
+    ///
+    /// let user = AuthUser::new("user123")
+    ///     .with_email("user@example.com");
+    ///
+    /// # #[cfg(feature = "email")]
+    /// assert!(!user.is_email_verified());
+    /// ```
+    #[cfg(feature = "email")]
+    #[must_use]
+    pub const fn is_email_verified(&self) -> bool {
+        self.email_verified_at.is_some()
     }
 }
 

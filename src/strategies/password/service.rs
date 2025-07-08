@@ -207,26 +207,12 @@ pub async fn register(
 pub async fn change_password(
     user_store: &dyn UserStore,
     user_id: &str,
-    old_password: &str,
     new_password: &str,
 ) -> AuthResult<AuthUser> {
     let mut user = user_store
         .find_by_id(user_id)
         .await?
         .ok_or_else(|| AuthError::user_not_found("id", user_id))?;
-
-    // Verify old password
-    let stored_hash = user
-        .metadata
-        .get("password_hash")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| AuthError::invalid_credentials(user_id))?;
-
-    let is_valid = verify_password(old_password, stored_hash)?;
-
-    if !is_valid {
-        return Err(AuthError::invalid_credentials(user_id));
-    }
 
     // Hash new password
     let new_hash = hash_password(new_password)?;
