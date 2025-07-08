@@ -1,0 +1,23 @@
+✨ Welcome to {{ app_name }}!
+
+Hey there, {{ user_name }}! 🎉
+
+🚀 You're almost there! Thanks for joining {{ app_name }}. We're excited to have you as part of our community!
+
+To complete your registration and unlock all the amazing features, please verify your email address by visiting this link:
+
+{{ action_url }}
+
+What you'll get after verification:
+🔐 Secure Account - Keep your data safe
+📱 Stay Updated - Get important notifications  
+⚡ Full Access - Unlock all features
+
+⏰ Time Sensitive: This verification link will expire in {{ expiration_time }}. Don't wait too long!
+
+Didn't sign up for {{ app_name }}? No worries - you can safely ignore this email. Someone might have entered your email address by mistake.
+
+This email was sent to {{ user_email }}
+Questions? We're here to help! Reach out to our friendly support team 💬
+
+Welcome to {{ app_name }}! 🎊

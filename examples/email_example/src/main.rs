@@ -11,6 +11,7 @@ use actix_web::{
     App, HttpResponse, HttpServer, Responder, Result,
 };
 use std::env;
+use std::{fs, path::Path};
 
 async fn user_info(user: AuthedUser) -> Result<impl Responder> {
     Ok(HttpResponse::Ok().json(serde_json::json!({
@@ -56,7 +57,7 @@ async fn main() -> std::io::Result<()> {
     let smtp_from = env::var("SMTP_FROM_ADDRESS").unwrap_or_else(|_| smtp_user.clone());
     let base_url = env::var("BASE_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
 
-    // Configure email service with full functionality (verification + password reset)
+    // Configure email service with custom templates
     let email_config = EmailConfigBuilder::new()
         .smtp_host(smtp_host)
         .smtp_port(smtp_port)
@@ -69,12 +70,30 @@ async fn main() -> std::io::Result<()> {
         .build()
         .expect("Failed to build email configuration");
 
-    let email_service = EmailService::with_service_config(
+    // Load custom email templates from files
+    let load_template = |path: &str| -> String {
+        fs::read_to_string(Path::new("templates").join(path))
+            .unwrap_or_else(|_| panic!("Failed to load template: {path}"))
+    };
+
+    // Create email service with custom templates using the builder pattern
+    let email_service = EmailService::builder(
         email_config,
-        EmailServiceConfig::all_enabled(), // Enable both email verification and password reset
         "Actix Passport Email Demo",
         "your-secret-key-here", // In production, use a secure random key
     )
+    .with_service_config(EmailServiceConfig::all_enabled()) // Enable both email verification and password reset
+    .with_password_reset_template(
+        "🔒 Reset Your {{ app_name }} Password",
+        load_template("password_reset_html.html"),
+        Some(load_template("password_reset_text.txt")),
+    )
+    .with_email_verification_template(
+        "✨ Welcome to {{ app_name }}! Please verify your email",
+        load_template("email_verification_html.html"),
+        Some(load_template("email_verification_text.txt")),
+    )
+    .build()
     .await
     .expect("Failed to initialize email service");
 
@@ -85,6 +104,9 @@ async fn main() -> std::io::Result<()> {
 
     let bind_address = "127.0.0.1:8080";
     println!("Starting server at http://{bind_address}");
+    println!("\n📧 Custom Email Templates Loaded Successfully!");
+    println!("   ✨ Email Verification: Custom welcome design with gradients");
+    println!("   🔒 Password Reset: Custom security-focused design");
     println!("\nAvailable endpoints:");
     println!("  GET  /                           - Main application page");
     println!("  GET  /api/user                   - Get current user info");
@@ -95,6 +117,7 @@ async fn main() -> std::io::Result<()> {
     println!("  POST /auth/verify-email          - Verify email with token");
     println!("  POST /auth/forgot-password       - Send password reset email");
     println!("  POST /auth/reset-password        - Reset password with token");
+    println!("\n💡 Tip: Custom templates are loaded from ./templates/ directory");
 
     HttpServer::new(move || {
         App::new()

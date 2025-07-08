@@ -1,13 +1,200 @@
 //! Core email service for sending verification and password reset emails.
 
 use crate::email::{
-    EmailConfig, EmailServiceConfig, EmailTemplateEngine, SmtpProvider, StandardSmtpProvider, TemplateContext,
-    TokenService, TokenType,
+    EmailConfig, EmailServiceConfig, EmailTemplateEngine, SmtpProvider, StandardSmtpProvider,
+    TemplateContext, TokenService, TokenType,
 };
 use crate::errors::AuthError;
 use crate::types::{AuthResult, AuthUser};
 use chrono::Duration;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
+
+/// Builder for creating `EmailService` with custom templates.
+#[derive(Clone)]
+pub struct EmailServiceBuilder {
+    /// Email configuration
+    config: EmailConfig,
+    /// Service configuration for feature enabling/disabling
+    service_config: EmailServiceConfig,
+    /// Application name for emails
+    app_name: String,
+    /// Token secret for signing tokens
+    token_secret: String,
+    /// Custom SMTP provider
+    smtp_provider: Option<Arc<dyn SmtpProvider>>,
+    /// Custom email verification templates (subject, html, text)
+    verification_templates: Option<(String, String, Option<String>)>,
+    /// Custom password reset templates (subject, html, text)
+    reset_templates: Option<(String, String, Option<String>)>,
+    /// Additional custom templates
+    custom_templates: HashMap<String, String>,
+}
+
+impl EmailServiceBuilder {
+    /// Creates a new email service builder.
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - Email configuration
+    /// * `app_name` - Name of your application
+    /// * `token_secret` - Secret key for token signing
+    pub fn new(
+        config: EmailConfig,
+        app_name: impl Into<String>,
+        token_secret: impl Into<String>,
+    ) -> Self {
+        Self {
+            config,
+            service_config: EmailServiceConfig::all_enabled(),
+            app_name: app_name.into(),
+            token_secret: token_secret.into(),
+            smtp_provider: None,
+            verification_templates: None,
+            reset_templates: None,
+            custom_templates: HashMap::new(),
+        }
+    }
+
+    /// Sets the service configuration for enabling/disabling features.
+    #[must_use]
+    pub const fn with_service_config(mut self, service_config: EmailServiceConfig) -> Self {
+        self.service_config = service_config;
+        self
+    }
+
+    /// Sets a custom SMTP provider.
+    #[must_use]
+    pub fn with_smtp_provider(mut self, smtp_provider: Arc<dyn SmtpProvider>) -> Self {
+        self.smtp_provider = Some(smtp_provider);
+        self
+    }
+
+    /// Sets custom email verification templates.
+    ///
+    /// # Arguments
+    ///
+    /// * `subject` - Subject line template (Tera syntax)
+    /// * `html_body` - HTML body template (Tera syntax)
+    /// * `text_body` - Optional plain text body template (Tera syntax)
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use actix_passport::email::{EmailConfig, EmailServiceBuilder};
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let config = EmailConfig::gmail("user@gmail.com", "password", "https://myapp.com");
+    ///
+    /// let email_service = EmailServiceBuilder::new(config, "My App", "secret")
+    ///     .with_email_verification_template(
+    ///         "Welcome to {{ app_name }}!",
+    ///         "<h1>Welcome!</h1><p><a href=\"{{ action_url }}\">Verify</a></p>",
+    ///         Some("Welcome! Visit: {{ action_url }}")
+    ///     )
+    ///     .build()
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[must_use]
+    pub fn with_email_verification_template(
+        mut self,
+        subject: impl Into<String>,
+        html_body: impl Into<String>,
+        text_body: Option<impl Into<String>>,
+    ) -> Self {
+        self.verification_templates =
+            Some((subject.into(), html_body.into(), text_body.map(Into::into)));
+        self
+    }
+
+    /// Sets custom password reset templates.
+    ///
+    /// # Arguments
+    ///
+    /// * `subject` - Subject line template (Tera syntax)
+    /// * `html_body` - HTML body template (Tera syntax)
+    /// * `text_body` - Optional plain text body template (Tera syntax)
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use actix_passport::email::{EmailConfig, EmailServiceBuilder};
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let config = EmailConfig::gmail("user@gmail.com", "password", "https://myapp.com");
+    ///
+    /// let email_service = EmailServiceBuilder::new(config, "My App", "secret")
+    ///     .with_password_reset_template(
+    ///         "Reset your password",
+    ///         "<h1>Reset</h1><p><a href=\"{{ action_url }}\">Reset</a></p>",
+    ///         Some("Reset: {{ action_url }}")
+    ///     )
+    ///     .build()
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[must_use]
+    pub fn with_password_reset_template(
+        mut self,
+        subject: impl Into<String>,
+        html_body: impl Into<String>,
+        text_body: Option<impl Into<String>>,
+    ) -> Self {
+        self.reset_templates = Some((subject.into(), html_body.into(), text_body.map(Into::into)));
+        self
+    }
+
+    /// Adds a custom template.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Template name
+    /// * `content` - Template content (Tera syntax)
+    #[must_use]
+    pub fn with_custom_template(
+        mut self,
+        name: impl Into<String>,
+        content: impl Into<String>,
+    ) -> Self {
+        self.custom_templates.insert(name.into(), content.into());
+        self
+    }
+
+    /// Builds the `EmailService`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Template engine initialization fails
+    /// - SMTP provider configuration is invalid
+    pub async fn build(self) -> AuthResult<EmailService> {
+        let smtp_provider = self
+            .smtp_provider
+            .unwrap_or_else(|| Arc::new(StandardSmtpProvider::new(self.config.clone())));
+
+        let template_engine = EmailTemplateEngine::with_custom_templates(
+            self.verification_templates.as_ref(),
+            self.reset_templates.as_ref(),
+            self.custom_templates,
+        )?;
+
+        let token_service = TokenService::new(self.token_secret);
+
+        // Validate the SMTP configuration
+        smtp_provider.validate_config().await?;
+
+        Ok(EmailService {
+            smtp_provider,
+            template_engine,
+            token_service,
+            config: self.config,
+            service_config: self.service_config,
+            app_name: self.app_name,
+        })
+    }
+}
 
 /// Main email service that coordinates SMTP, templates, and tokens.
 ///
@@ -75,7 +262,8 @@ impl EmailService {
             EmailServiceConfig::all_enabled(),
             app_name,
             token_secret,
-        ).await
+        )
+        .await
     }
 
     /// Creates a new email service with custom feature configuration.
@@ -164,7 +352,8 @@ impl EmailService {
             EmailServiceConfig::all_enabled(),
             app_name,
             token_secret,
-        ).await
+        )
+        .await
     }
 
     /// Creates an email service with a custom SMTP provider and service configuration.
@@ -201,6 +390,51 @@ impl EmailService {
             service_config,
             app_name: app_name.into(),
         })
+    }
+
+    /// Creates a new `EmailServiceBuilder` for configuring custom templates and settings.
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - Email configuration
+    /// * `app_name` - Name of your application
+    /// * `token_secret` - Secret key for token signing
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use actix_passport::email::{EmailConfig, EmailService};
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let config = EmailConfig::gmail(
+    ///     "user@gmail.com",
+    ///     "app_password",
+    ///     "https://myapp.com"
+    /// );
+    ///
+    /// let email_service = EmailService::builder(config, "My App", "secret-key")
+    ///     .with_password_reset_template(
+    ///         "Reset your {{ app_name }} password",
+    ///         "<h1>Custom Reset</h1><p><a href=\"{{ action_url }}\">Reset</a></p>",
+    ///         Some("Reset: {{ action_url }}")
+    ///     )
+    ///     .with_email_verification_template(
+    ///         "Verify your {{ app_name }} account",
+    ///         "<h1>Custom Verify</h1><p><a href=\"{{ action_url }}\">Verify</a></p>",
+    ///         Some("Verify: {{ action_url }}")
+    ///     )
+    ///     .build()
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[must_use]
+    pub fn builder(
+        config: EmailConfig,
+        app_name: impl Into<String>,
+        token_secret: impl Into<String>,
+    ) -> EmailServiceBuilder {
+        EmailServiceBuilder::new(config, app_name, token_secret)
     }
 
     /// Sends an email verification email to a user.

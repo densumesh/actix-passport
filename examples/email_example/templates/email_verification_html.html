@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to {{ app_name }}!</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .verify-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white !important;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 25px;
+            margin: 25px 0;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+            transition: transform 0.2s;
+        }
+        .verify-button:hover {
+            transform: translateY(-2px);
+        }
+        .welcome-box {
+            background-color: #e8f5e8;
+            border-left: 4px solid #28a745;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 5px;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            border-top: 1px solid #e9ecef;
+        }
+        .info-notice {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .url-fallback {
+            word-break: break-all;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .feature-item {
+            text-align: center;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .feature-emoji {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>✨ Welcome to {{ app_name }}!</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Let's get you verified</p>
+        </div>
+        
+        <div class="content">
+            <h2 style="color: #333; margin-top: 0;">Hey there, {{ user_name }}! 🎉</h2>
+            
+            <div class="welcome-box">
+                <strong>🚀 You're almost there!</strong> Thanks for joining {{ app_name }}. We're excited to have you as part of our community!
+            </div>
+            
+            <p>To complete your registration and unlock all the amazing features, please verify your email address by clicking the button below:</p>
+            
+            <p style="text-align: center;">
+                <a href="{{ action_url }}" class="verify-button">📧 Verify My Email</a>
+            </p>
+            
+            <div class="features-grid">
+                <div class="feature-item">
+                    <span class="feature-emoji">🔐</span>
+                    <strong>Secure Account</strong>
+                    <p style="margin: 5px 0 0 0; font-size: 12px;">Keep your data safe</p>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-emoji">📱</span>
+                    <strong>Stay Updated</strong>
+                    <p style="margin: 5px 0 0 0; font-size: 12px;">Get important notifications</p>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-emoji">⚡</span>
+                    <strong>Full Access</strong>
+                    <p style="margin: 5px 0 0 0; font-size: 12px;">Unlock all features</p>
+                </div>
+            </div>
+            
+            <div class="info-notice">
+                <strong>⏰ Time Sensitive:</strong> This verification link will expire in <strong>{{ expiration_time }}</strong>. Don't wait too long!
+            </div>
+            
+            <p><strong>Button not working?</strong> No problem! Copy and paste this link into your browser:</p>
+            <div class="url-fallback">{{ action_url }}</div>
+            
+            <p style="margin-top: 30px;"><strong>Didn't sign up for {{ app_name }}?</strong> No worries - you can safely ignore this email. Someone might have entered your email address by mistake.</p>
+        </div>
+        
+        <div class="footer">
+            <p>This email was sent to <strong>{{ user_email }}</strong></p>
+            <p>Questions? We're here to help! Reach out to our friendly support team 💬</p>
+            <p>Welcome to {{ app_name }}! 🎊</p>
+        </div>
+    </div>
+</body>
+</html>

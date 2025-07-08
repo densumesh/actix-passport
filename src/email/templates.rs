@@ -120,7 +120,7 @@ impl EmailTemplateEngine {
         Ok(Self { tera })
     }
 
-    /// Creates a template engine with custom templates.
+    /// Creates a template engine with a simple map of custom templates.
     ///
     /// # Arguments
     ///
@@ -129,13 +129,92 @@ impl EmailTemplateEngine {
     /// # Errors
     ///
     /// Returns an error if any template compilation fails.
-    pub fn with_custom_templates(templates: HashMap<String, String>) -> AuthResult<Self> {
+    pub fn with_template_map(templates: HashMap<String, String>) -> AuthResult<Self> {
         let mut tera = Tera::default();
 
         for (name, template) in templates {
             tera.add_raw_template(&name, &template)
                 .map_err(|e| AuthError::TemplateError {
                     message: format!("Failed to compile template '{name}': {e}"),
+                })?;
+        }
+
+        Ok(Self { tera })
+    }
+
+    /// Creates a template engine with custom templates for verification and password reset.
+    ///
+    /// # Arguments
+    ///
+    /// * `verification_templates` - Optional custom verification templates (subject, html, text)
+    /// * `reset_templates` - Optional custom password reset templates (subject, html, text)
+    /// * `custom_templates` - Additional custom templates
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any template compilation fails.
+    pub fn with_custom_templates(
+        verification_templates: Option<&(String, String, Option<String>)>,
+        reset_templates: Option<&(String, String, Option<String>)>,
+        custom_templates: HashMap<String, String>,
+    ) -> AuthResult<Self> {
+        let mut tera = Tera::default();
+
+        // Add default or custom verification templates
+        let (verification_subject, verification_html, verification_text) =
+            verification_templates.as_ref().map_or(
+                (
+                    DEFAULT_VERIFICATION_SUBJECT,
+                    DEFAULT_VERIFICATION_HTML,
+                    DEFAULT_VERIFICATION_TEXT,
+                ),
+                |(s, h, t)| {
+                    (
+                        s.as_str(),
+                        h.as_str(),
+                        t.as_deref().unwrap_or(DEFAULT_VERIFICATION_TEXT),
+                    )
+                },
+            );
+
+        // Add default or custom password reset templates
+        let (reset_subject, reset_html, reset_text) = reset_templates.as_ref().map_or(
+            (
+                DEFAULT_PASSWORD_RESET_SUBJECT,
+                DEFAULT_PASSWORD_RESET_HTML,
+                DEFAULT_PASSWORD_RESET_TEXT,
+            ),
+            |(s, h, t)| {
+                (
+                    s.as_str(),
+                    h.as_str(),
+                    t.as_deref().unwrap_or(DEFAULT_PASSWORD_RESET_TEXT),
+                )
+            },
+        );
+
+        // Compile all templates
+        let templates = vec![
+            ("email_verification_subject", verification_subject),
+            ("email_verification_html", verification_html),
+            ("email_verification_text", verification_text),
+            ("password_reset_subject", reset_subject),
+            ("password_reset_html", reset_html),
+            ("password_reset_text", reset_text),
+        ];
+
+        for (name, template) in templates {
+            tera.add_raw_template(name, template)
+                .map_err(|e| AuthError::TemplateError {
+                    message: format!("Failed to compile template '{name}': {e}"),
+                })?;
+        }
+
+        // Add any additional custom templates
+        for (name, template) in custom_templates {
+            tera.add_raw_template(&name, &template)
+                .map_err(|e| AuthError::TemplateError {
+                    message: format!("Failed to compile custom template '{name}': {e}"),
                 })?;
         }
 
